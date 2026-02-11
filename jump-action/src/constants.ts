@@ -53,13 +53,14 @@ export const QUIZ_ITEM_HIGH_Y = 200;
 export const QUIZ_ITEM_SPACING_X = 200;
 export const COLOR_QUIZ_WORD = 0x3498db;
 
-// Buff / Debuff
-export const BUFF_DURATION_MS = 5000;
-export const DEBUFF_DURATION_MS = 4000;
-export const SPEED_BUFF_FACTOR = 0.7;
-export const SPEED_DEBUFF_FACTOR = 1.3;
-export const JUMP_BUFF_FACTOR = 1.3;
-export const JUMP_DEBUFF_FACTOR = 0.7;
+// Buff / Debuff (permanent, cumulative)
+export const SPEED_BUFF_STEP = 1.15;     // 정답 시 속도 15% 증가 (누적)
+export const JUMP_BUFF_STEP = 1.15;      // 정답 시 점프력 15% 증가 (누적)
+export const SPEED_DEBUFF_STEP = 0.85;   // 오답 시 속도 15% 감소 (누적)
+export const SPEED_MULT_MIN = 0.4;       // 속도 배율 하한
+export const SPEED_MULT_MAX = 2.5;       // 속도 배율 상한
+export const JUMP_MULT_MAX = 2.5;        // 점프 배율 상한
+export const EFFECT_DISPLAY_MS = 1500;   // 효과 텍스트 표시 시간
 
 // Fall death
 export const FALL_DEATH_Y = GAME_HEIGHT + 50;

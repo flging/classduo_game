@@ -28,12 +28,13 @@ import {
   QUIZ_TRIGGER_COINS,
   FALL_DEATH_Y,
   HIT_FREEZE_DURATION,
-  BUFF_DURATION_MS,
-  DEBUFF_DURATION_MS,
-  SPEED_BUFF_FACTOR,
-  SPEED_DEBUFF_FACTOR,
-  JUMP_BUFF_FACTOR,
-  JUMP_DEBUFF_FACTOR,
+  SPEED_BUFF_STEP,
+  JUMP_BUFF_STEP,
+  SPEED_DEBUFF_STEP,
+  SPEED_MULT_MIN,
+  SPEED_MULT_MAX,
+  JUMP_MULT_MAX,
+  EFFECT_DISPLAY_MS,
 } from "../constants";
 
 export class GameScene extends Phaser.Scene {
@@ -55,7 +56,7 @@ export class GameScene extends Phaser.Scene {
   private lastQuizCoinThreshold = 0;
 
   private quizManager!: QuizManager;
-  private activeEffects: Map<string, Phaser.Time.TimerEvent> = new Map();
+  private effectDisplayTimer?: Phaser.Time.TimerEvent;
 
   constructor() {
     super({ key: "GameScene" });
@@ -70,7 +71,6 @@ export class GameScene extends Phaser.Scene {
     this.distanceTraveled = 0;
     this.totalCoinsCollected = 0;
     this.lastQuizCoinThreshold = 0;
-    this.activeEffects.clear();
 
     // Extend world bounds downward for fall death
     this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT + 200);
@@ -353,80 +353,37 @@ export class GameScene extends Phaser.Scene {
     const type = types[Phaser.Math.Between(0, 1)];
 
     if (type === "speed") {
-      this.clearEffect("speed");
-      this.scrollSpeedMultiplier = SPEED_BUFF_FACTOR;
-      this.showEffect("SLOW", "#3498db");
-      const timer = this.time.delayedCall(BUFF_DURATION_MS, () => {
-        this.scrollSpeedMultiplier = 1;
-        this.activeEffects.delete("speed");
-        this.hideEffect();
-      });
-      this.activeEffects.set("speed", timer);
+      this.scrollSpeedMultiplier = Phaser.Math.Clamp(
+        this.scrollSpeedMultiplier * SPEED_BUFF_STEP,
+        SPEED_MULT_MIN,
+        SPEED_MULT_MAX
+      );
+      this.showEffect("SPEED UP!", "#3498db");
     } else {
-      this.clearEffect("jump");
-      this.player.jumpMultiplier = JUMP_BUFF_FACTOR;
-      this.player.setTint(0x2ecc71);
-      this.showEffect("JUMP+", "#2ecc71");
-      const timer = this.time.delayedCall(BUFF_DURATION_MS, () => {
-        this.player.jumpMultiplier = 1;
-        this.player.clearTint();
-        this.activeEffects.delete("jump");
-        this.hideEffect();
-      });
-      this.activeEffects.set("jump", timer);
+      this.player.jumpMultiplier = Phaser.Math.Clamp(
+        this.player.jumpMultiplier * JUMP_BUFF_STEP,
+        1,
+        JUMP_MULT_MAX
+      );
+      this.showEffect("JUMP UP!", "#2ecc71");
     }
   }
 
   private applyDebuff(): void {
-    const types: Array<"speed" | "jump"> = ["speed", "jump"];
-    const type = types[Phaser.Math.Between(0, 1)];
-
-    if (type === "speed") {
-      this.clearEffect("speed");
-      this.scrollSpeedMultiplier = SPEED_DEBUFF_FACTOR;
-      this.showEffect("FAST!", "#e74c3c");
-      const timer = this.time.delayedCall(DEBUFF_DURATION_MS, () => {
-        this.scrollSpeedMultiplier = 1;
-        this.activeEffects.delete("speed");
-        this.hideEffect();
-      });
-      this.activeEffects.set("speed", timer);
-    } else {
-      this.clearEffect("jump");
-      this.player.jumpMultiplier = JUMP_DEBUFF_FACTOR;
-      this.player.setTint(0xe74c3c);
-      this.showEffect("JUMP-", "#e74c3c");
-      const timer = this.time.delayedCall(DEBUFF_DURATION_MS, () => {
-        this.player.jumpMultiplier = 1;
-        this.player.clearTint();
-        this.activeEffects.delete("jump");
-        this.hideEffect();
-      });
-      this.activeEffects.set("jump", timer);
-    }
-  }
-
-  private clearEffect(key: string): void {
-    const existing = this.activeEffects.get(key);
-    if (existing) {
-      existing.remove();
-      this.activeEffects.delete(key);
-    }
-    if (key === "speed") this.scrollSpeedMultiplier = 1;
-    if (key === "jump") {
-      this.player.jumpMultiplier = 1;
-      this.player.clearTint();
-    }
+    this.scrollSpeedMultiplier = Phaser.Math.Clamp(
+      this.scrollSpeedMultiplier * SPEED_DEBUFF_STEP,
+      SPEED_MULT_MIN,
+      SPEED_MULT_MAX
+    );
+    this.showEffect("SPEED DOWN!", "#e74c3c");
   }
 
   private showEffect(text: string, color: string): void {
     this.effectText.setText(text).setColor(color).setAlpha(1);
-  }
-
-  private hideEffect(): void {
-    if (this.activeEffects.size === 0) {
+    this.effectDisplayTimer?.remove();
+    this.effectDisplayTimer = this.time.delayedCall(EFFECT_DISPLAY_MS, () => {
       this.effectText.setAlpha(0);
-    }
+    });
   }
 
   // ---- Sync scroll speed to all entities ----
@@ -473,8 +430,7 @@ export class GameScene extends Phaser.Scene {
 
     this.quizManager.cleanup();
 
-    this.activeEffects.forEach((timer) => timer.remove());
-    this.activeEffects.clear();
+    this.effectDisplayTimer?.remove();
 
     this.grounds.getChildren().forEach((obj) => {
       (obj as GroundSegment).setVelocityX(0);
