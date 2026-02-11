@@ -190,6 +190,8 @@ export class GameScene extends Phaser.Scene {
       applyJumpDown: () => this.applyJumpDown(),
       applyJumpCountUp: () => this.applyJumpCountUp(),
       applyJumpCountDown: () => this.applyJumpCountDown(),
+      isJumpCountMaxed: () => this.player.maxJumps >= JUMP_COUNT_MAX,
+      isJumpCountAtMin: () => this.player.maxJumps <= JUMP_COUNT_MIN,
       setGameState: (state: GameState) => {
         this.gameState = state;
       },

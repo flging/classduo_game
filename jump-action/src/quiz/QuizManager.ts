@@ -31,6 +31,8 @@ export interface QuizCallbacks {
   applyJumpDown: () => void;
   applyJumpCountUp: () => void;
   applyJumpCountDown: () => void;
+  isJumpCountMaxed: () => boolean;
+  isJumpCountAtMin: () => boolean;
   setGameState: (state: GameState) => void;
   addScore: (amount: number) => void;
   showEffect: (text: string, color: string) => void;
@@ -198,15 +200,23 @@ export class QuizManager {
 
   // ---- Reward card UI ----
 
+  private pickCards(): CardDef[] {
+    let pool = [...REWARD_CARDS];
+    if (this.callbacks.isJumpCountMaxed()) {
+      pool = pool.filter((c) => c.type !== "jumpCount");
+    }
+    return Phaser.Utils.Array.Shuffle(pool).slice(0, 3);
+  }
+
   private showRewardCards(isCorrect: boolean): void {
     this.callbacks.setGameState("choosing_reward");
     this.scene.physics.pause();
 
-    const cardCount = REWARD_CARDS.length;
-    const cardW = 140;
+    const selected = this.pickCards();
+    const cardW = 150;
     const cardH = 180;
-    const gap = 16;
-    const totalW = cardW * cardCount + gap * (cardCount - 1);
+    const gap = 24;
+    const totalW = cardW * 3 + gap * 2;
     const startX = (GAME_WIDTH - totalW) / 2;
     const cardY = (GAME_HEIGHT - cardH) / 2;
 
@@ -230,7 +240,7 @@ export class QuizManager {
     this.rewardUI.push(title);
 
     // Cards
-    REWARD_CARDS.forEach((card, i) => {
+    selected.forEach((card, i) => {
       const cx = startX + cardW / 2 + i * (cardW + gap);
       const cy = cardY + cardH / 2;
 
@@ -322,6 +332,8 @@ export class QuizManager {
         if (isCorrect) {
           this.callbacks.applyJumpCountUp();
           this.callbacks.showEffect(prefix + "JUMP COUNT UP!", color);
+        } else if (this.callbacks.isJumpCountAtMin()) {
+          this.callbacks.showEffect("오답! 하지만 효과 없음!", "#e67e22");
         } else {
           this.callbacks.applyJumpCountDown();
           this.callbacks.showEffect(prefix + "JUMP COUNT DOWN!", color);
