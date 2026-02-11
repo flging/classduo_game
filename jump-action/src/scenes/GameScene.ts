@@ -38,7 +38,13 @@ import {
   JUMP_COUNT_MIN,
   JUMP_COUNT_MAX,
   TIME_GAUGE_MAX_MS,
-  TIME_GAUGE_HEIGHT,
+  TIME_GAUGE_ICON_RADIUS,
+  TIME_GAUGE_BAR_X,
+  TIME_GAUGE_BAR_Y,
+  TIME_GAUGE_BAR_WIDTH,
+  TIME_GAUGE_BAR_HEIGHT,
+  TIME_GAUGE_BAR_RADIUS,
+  TIME_GAUGE_PADDING,
   EFFECT_DISPLAY_MS,
 } from "../constants";
 
@@ -65,7 +71,7 @@ export class GameScene extends Phaser.Scene {
   private jumpCountStacks = 0;
 
   private timeRemaining = TIME_GAUGE_MAX_MS;
-  private timeGaugeBg!: Phaser.GameObjects.Graphics;
+  private timeGaugeContainer!: Phaser.GameObjects.Graphics;
   private timeGaugeFill!: Phaser.GameObjects.Graphics;
 
   private quizManager!: QuizManager;
@@ -145,10 +151,9 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(1, 0)
       .setDepth(5);
 
-    // Time gauge bar
-    this.timeGaugeBg = this.add.graphics().setDepth(5);
-    this.timeGaugeBg.fillStyle(0x333333, 1);
-    this.timeGaugeBg.fillRect(0, 0, GAME_WIDTH, TIME_GAUGE_HEIGHT);
+    // Cookie Run style time gauge
+    this.timeGaugeContainer = this.add.graphics().setDepth(5);
+    this.drawGaugeFrame();
 
     this.timeGaugeFill = this.add.graphics().setDepth(5);
     this.updateTimeGauge();
@@ -442,20 +447,94 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  // ---- Time gauge ----
+  // ---- Time gauge (Cookie Run style) ----
+
+  private drawGaugeFrame(): void {
+    const g = this.timeGaugeContainer;
+    const iconCx = TIME_GAUGE_ICON_RADIUS + 4;
+    const iconCy = TIME_GAUGE_BAR_Y + TIME_GAUGE_BAR_HEIGHT / 2;
+    const r = TIME_GAUGE_ICON_RADIUS;
+
+    // Clock face: white circle with dark border
+    g.lineStyle(3, 0x2c3e50, 1);
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(iconCx, iconCy, r);
+    g.strokeCircle(iconCx, iconCy, r);
+
+    // Clock hands
+    g.lineStyle(2, 0x2c3e50, 1);
+    // Hour hand (pointing up-right)
+    g.lineBetween(iconCx, iconCy, iconCx, iconCy - r * 0.5);
+    // Minute hand (pointing right)
+    g.lineBetween(iconCx, iconCy, iconCx + r * 0.6, iconCy - r * 0.2);
+
+    // Center dot
+    g.fillStyle(0x2c3e50, 1);
+    g.fillCircle(iconCx, iconCy, 2);
+
+    // Bar frame: dark rounded rect background
+    g.fillStyle(0x1a1a2e, 1);
+    g.fillRoundedRect(
+      TIME_GAUGE_BAR_X, TIME_GAUGE_BAR_Y,
+      TIME_GAUGE_BAR_WIDTH, TIME_GAUGE_BAR_HEIGHT,
+      TIME_GAUGE_BAR_RADIUS
+    );
+
+    // Inner border highlight
+    g.lineStyle(2, 0x3d3d5c, 1);
+    g.strokeRoundedRect(
+      TIME_GAUGE_BAR_X, TIME_GAUGE_BAR_Y,
+      TIME_GAUGE_BAR_WIDTH, TIME_GAUGE_BAR_HEIGHT,
+      TIME_GAUGE_BAR_RADIUS
+    );
+  }
 
   private updateTimeGauge(): void {
     const ratio = this.timeRemaining / TIME_GAUGE_MAX_MS;
-    const width = GAME_WIDTH * ratio;
+    const pad = TIME_GAUGE_PADDING;
+    const innerW = TIME_GAUGE_BAR_WIDTH - pad * 2;
+    const innerH = TIME_GAUGE_BAR_HEIGHT - pad * 2;
+    const innerR = TIME_GAUGE_BAR_RADIUS - pad;
+    const fillW = Math.max(0, innerW * ratio);
 
     let color: number;
-    if (ratio > 0.5) color = 0x2ecc71;
-    else if (ratio > 0.25) color = 0xf39c12;
-    else color = 0xe74c3c;
+    let shineColor: number;
+    if (ratio > 0.5) {
+      color = 0x2ecc71;
+      shineColor = 0x58d68d;
+    } else if (ratio > 0.25) {
+      color = 0xf39c12;
+      shineColor = 0xf5b041;
+    } else {
+      color = 0xe74c3c;
+      shineColor = 0xec7063;
+    }
 
-    this.timeGaugeFill.clear();
-    this.timeGaugeFill.fillStyle(color, 1);
-    this.timeGaugeFill.fillRect(0, 0, width, TIME_GAUGE_HEIGHT);
+    const g = this.timeGaugeFill;
+    g.clear();
+
+    if (fillW <= 0) return;
+
+    const fx = TIME_GAUGE_BAR_X + pad;
+    const fy = TIME_GAUGE_BAR_Y + pad;
+
+    // Main fill
+    g.fillStyle(color, 1);
+    g.fillRoundedRect(fx, fy, fillW, innerH, {
+      tl: innerR,
+      tr: fillW >= innerW - innerR ? innerR : 0,
+      bl: innerR,
+      br: fillW >= innerW - innerR ? innerR : 0,
+    });
+
+    // Shine highlight (upper half)
+    g.fillStyle(shineColor, 0.4);
+    g.fillRoundedRect(fx, fy, fillW, innerH / 2, {
+      tl: innerR,
+      tr: fillW >= innerW - innerR ? innerR : 0,
+      bl: 0,
+      br: 0,
+    });
   }
 
   // ---- Sync scroll speed to all entities ----
