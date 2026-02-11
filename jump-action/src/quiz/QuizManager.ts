@@ -41,16 +41,10 @@ interface CardDef {
   color: number;
 }
 
-const POSITIVE_CARDS: CardDef[] = [
+const REWARD_CARDS: CardDef[] = [
   { type: "jump", title: "점프 UP", desc: "점프력 15% 증가", color: 0x2ecc71 },
   { type: "speed", title: "속도 UP", desc: "이동속도 15% 증가", color: 0x3498db },
-  { type: "score", title: `+${30}점`, desc: "즉시 점수 획득", color: 0xf1c40f },
-];
-
-const NEGATIVE_CARDS: CardDef[] = [
-  { type: "jump", title: "점프 DOWN", desc: "점프력 15% 감소", color: 0xc0392b },
-  { type: "speed", title: "속도 DOWN", desc: "이동속도 15% 감소", color: 0xc0392b },
-  { type: "score", title: `-${30}점`, desc: "점수 30점 감소", color: 0xc0392b },
+  { type: "score", title: `+${SCORE_BONUS}점`, desc: "즉시 점수 획득", color: 0xf1c40f },
 ];
 
 export class QuizManager {
@@ -107,13 +101,8 @@ export class QuizManager {
     }
 
     this.clearQuizItems();
-
-    const isCorrect = item.isCorrect;
-    if (isCorrect) {
-      this.showResult("정답!", "#2ecc71", () => this.showRewardCards(true));
-    } else {
-      this.showResult("오답!", "#e74c3c", () => this.showRewardCards(false));
-    }
+    this.clearBanner();
+    this.showRewardCards(item.isCorrect);
   }
 
   cleanup(): void {
@@ -210,7 +199,6 @@ export class QuizManager {
     this.callbacks.setGameState("choosing_reward");
     this.scene.physics.pause();
 
-    const cards = isCorrect ? POSITIVE_CARDS : NEGATIVE_CARDS;
     const cardW = 150;
     const cardH = 180;
     const gap = 24;
@@ -226,15 +214,11 @@ export class QuizManager {
     this.rewardUI.push(overlay);
 
     // Title
-    const titleStr = isCorrect
-      ? "보상을 선택하세요!"
-      : "벌칙을 선택하세요...";
-    const titleColor = isCorrect ? "#2ecc71" : "#e74c3c";
     const title = this.scene.add
-      .text(GAME_WIDTH / 2, cardY - 30, titleStr, {
+      .text(GAME_WIDTH / 2, cardY - 30, "보상을 선택하세요!", {
         fontFamily: "monospace",
         fontSize: "20px",
-        color: titleColor,
+        color: "#ffffff",
         fontStyle: "bold",
       })
       .setOrigin(0.5)
@@ -242,7 +226,7 @@ export class QuizManager {
     this.rewardUI.push(title);
 
     // Cards
-    cards.forEach((card, i) => {
+    REWARD_CARDS.forEach((card, i) => {
       const cx = startX + cardW / 2 + i * (cardW + gap);
       const cy = cardY + cardH / 2;
 
@@ -308,22 +292,33 @@ export class QuizManager {
     this.clearRewardUI();
     this.scene.physics.resume();
 
+    const prefix = isCorrect ? "정답! " : "오답! ";
+    const color = isCorrect ? "#2ecc71" : "#e74c3c";
+
     switch (type) {
       case "speed":
-        if (isCorrect) this.callbacks.applySpeedUp();
-        else this.callbacks.applySpeedDown();
+        if (isCorrect) {
+          this.callbacks.applySpeedUp();
+          this.callbacks.showEffect(prefix + "SPEED UP!", color);
+        } else {
+          this.callbacks.applySpeedDown();
+          this.callbacks.showEffect(prefix + "SPEED DOWN!", color);
+        }
         break;
       case "jump":
-        if (isCorrect) this.callbacks.applyJumpUp();
-        else this.callbacks.applyJumpDown();
+        if (isCorrect) {
+          this.callbacks.applyJumpUp();
+          this.callbacks.showEffect(prefix + "JUMP UP!", color);
+        } else {
+          this.callbacks.applyJumpDown();
+          this.callbacks.showEffect(prefix + "JUMP DOWN!", color);
+        }
         break;
       case "score": {
         const amount = isCorrect ? SCORE_BONUS : -SCORE_BONUS;
         this.callbacks.addScore(amount);
-        this.callbacks.showEffect(
-          amount > 0 ? `+${amount}점!` : `${amount}점!`,
-          amount > 0 ? "#f1c40f" : "#e74c3c"
-        );
+        const label = amount > 0 ? `+${amount}점!` : `${amount}점!`;
+        this.callbacks.showEffect(prefix + label, color);
         break;
       }
     }

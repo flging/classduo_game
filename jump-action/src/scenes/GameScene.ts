@@ -28,10 +28,8 @@ import {
   QUIZ_TRIGGER_COINS,
   FALL_DEATH_Y,
   HIT_FREEZE_DURATION,
-  SPEED_BUFF_STEP,
-  JUMP_BUFF_STEP,
-  SPEED_DEBUFF_STEP,
-  JUMP_DEBUFF_STEP,
+  SPEED_STACK_BASE,
+  JUMP_STACK_BASE,
   SPEED_MULT_MIN,
   SPEED_MULT_MAX,
   JUMP_MULT_MIN,
@@ -57,6 +55,9 @@ export class GameScene extends Phaser.Scene {
   private totalCoinsCollected = 0;
   private lastQuizCoinThreshold = 0;
 
+  private speedStacks = 0;
+  private jumpStacks = 0;
+
   private quizManager!: QuizManager;
   private effectDisplayTimer?: Phaser.Time.TimerEvent;
 
@@ -68,6 +69,8 @@ export class GameScene extends Phaser.Scene {
     this.score = 0;
     this.baseScrollSpeed = SCROLL_SPEED_INITIAL;
     this.scrollSpeedMultiplier = 1;
+    this.speedStacks = 0;
+    this.jumpStacks = 0;
     this.gameState = "playing";
     this.nextGroundX = 0;
     this.distanceTraveled = 0;
@@ -354,39 +357,39 @@ export class GameScene extends Phaser.Scene {
   }
 
   private applySpeedUp(): void {
+    this.speedStacks++;
     this.scrollSpeedMultiplier = Phaser.Math.Clamp(
-      this.scrollSpeedMultiplier * SPEED_BUFF_STEP,
+      Math.pow(SPEED_STACK_BASE, this.speedStacks),
       SPEED_MULT_MIN,
       SPEED_MULT_MAX
     );
-    this.showEffect("SPEED UP!", "#3498db");
   }
 
   private applySpeedDown(): void {
+    this.speedStacks--;
     this.scrollSpeedMultiplier = Phaser.Math.Clamp(
-      this.scrollSpeedMultiplier * SPEED_DEBUFF_STEP,
+      Math.pow(SPEED_STACK_BASE, this.speedStacks),
       SPEED_MULT_MIN,
       SPEED_MULT_MAX
     );
-    this.showEffect("SPEED DOWN!", "#e74c3c");
   }
 
   private applyJumpUp(): void {
+    this.jumpStacks++;
     this.player.jumpMultiplier = Phaser.Math.Clamp(
-      this.player.jumpMultiplier * JUMP_BUFF_STEP,
+      Math.pow(JUMP_STACK_BASE, this.jumpStacks),
       JUMP_MULT_MIN,
       JUMP_MULT_MAX
     );
-    this.showEffect("JUMP UP!", "#2ecc71");
   }
 
   private applyJumpDown(): void {
+    this.jumpStacks--;
     this.player.jumpMultiplier = Phaser.Math.Clamp(
-      this.player.jumpMultiplier * JUMP_DEBUFF_STEP,
+      Math.pow(JUMP_STACK_BASE, this.jumpStacks),
       JUMP_MULT_MIN,
       JUMP_MULT_MAX
     );
-    this.showEffect("JUMP DOWN!", "#e74c3c");
   }
 
   private showEffect(text: string, color: string): void {

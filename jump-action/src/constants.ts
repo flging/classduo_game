@@ -53,11 +53,9 @@ export const QUIZ_ITEM_HIGH_Y = 200;
 export const QUIZ_ITEM_SPACING_X = 200;
 export const COLOR_QUIZ_WORD = 0x3498db;
 
-// Buff / Debuff (permanent, cumulative)
-export const SPEED_BUFF_STEP = 1.15;
-export const JUMP_BUFF_STEP = 1.15;
-export const SPEED_DEBUFF_STEP = 0.85;
-export const JUMP_DEBUFF_STEP = 0.85;
+// Buff / Debuff (stack-based: multiplier = base ^ stacks)
+export const SPEED_STACK_BASE = 1.15;    // 스택당 15%
+export const JUMP_STACK_BASE = 1.15;     // 스택당 15%
 export const SPEED_MULT_MIN = 0.4;
 export const SPEED_MULT_MAX = 2.5;
 export const JUMP_MULT_MIN = 0.4;
