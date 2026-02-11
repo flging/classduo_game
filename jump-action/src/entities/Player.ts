@@ -12,7 +12,7 @@ import {
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private jumpCount = 0;
-  private maxJumps = MAX_JUMPS;
+  maxJumps = MAX_JUMPS;
 
   private lastGroundedAt = 0;
   private jumpBufferedAt = 0;
@@ -66,7 +66,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (this.jumpCount === 0 && (onGround || inCoyoteWindow)) {
       this.executeJump();
-    } else if (this.jumpCount === 1) {
+    } else if (this.jumpCount > 0 && this.jumpCount < this.maxJumps) {
       this.executeJump();
     }
   }
@@ -80,6 +80,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.lastGroundedAt = 0;
     this.jumpBufferedAt = 0;
     this.jumpHeld = false;
+    this.maxJumps = MAX_JUMPS;
     this.jumpMultiplier = 1;
     this.justJumped = false;
     this.clearTint();

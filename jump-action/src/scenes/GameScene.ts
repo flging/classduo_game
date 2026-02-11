@@ -28,12 +28,15 @@ import {
   QUIZ_TRIGGER_COINS,
   FALL_DEATH_Y,
   HIT_FREEZE_DURATION,
+  MAX_JUMPS,
   SPEED_STACK_BASE,
   JUMP_STACK_BASE,
   SPEED_MULT_MIN,
   SPEED_MULT_MAX,
   JUMP_MULT_MIN,
   JUMP_MULT_MAX,
+  JUMP_COUNT_MIN,
+  JUMP_COUNT_MAX,
   EFFECT_DISPLAY_MS,
 } from "../constants";
 
@@ -57,6 +60,7 @@ export class GameScene extends Phaser.Scene {
 
   private speedStacks = 0;
   private jumpStacks = 0;
+  private jumpCountStacks = 0;
 
   private quizManager!: QuizManager;
   private effectDisplayTimer?: Phaser.Time.TimerEvent;
@@ -71,6 +75,7 @@ export class GameScene extends Phaser.Scene {
     this.scrollSpeedMultiplier = 1;
     this.speedStacks = 0;
     this.jumpStacks = 0;
+    this.jumpCountStacks = 0;
     this.gameState = "playing";
     this.nextGroundX = 0;
     this.distanceTraveled = 0;
@@ -183,6 +188,8 @@ export class GameScene extends Phaser.Scene {
       applySpeedDown: () => this.applySpeedDown(),
       applyJumpUp: () => this.applyJumpUp(),
       applyJumpDown: () => this.applyJumpDown(),
+      applyJumpCountUp: () => this.applyJumpCountUp(),
+      applyJumpCountDown: () => this.applyJumpCountDown(),
       setGameState: (state: GameState) => {
         this.gameState = state;
       },
@@ -389,6 +396,24 @@ export class GameScene extends Phaser.Scene {
       Math.pow(JUMP_STACK_BASE, this.jumpStacks),
       JUMP_MULT_MIN,
       JUMP_MULT_MAX
+    );
+  }
+
+  private applyJumpCountUp(): void {
+    this.jumpCountStacks++;
+    this.player.maxJumps = Phaser.Math.Clamp(
+      MAX_JUMPS + this.jumpCountStacks,
+      JUMP_COUNT_MIN,
+      JUMP_COUNT_MAX
+    );
+  }
+
+  private applyJumpCountDown(): void {
+    this.jumpCountStacks--;
+    this.player.maxJumps = Phaser.Math.Clamp(
+      MAX_JUMPS + this.jumpCountStacks,
+      JUMP_COUNT_MIN,
+      JUMP_COUNT_MAX
     );
   }
 

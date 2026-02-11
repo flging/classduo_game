@@ -29,6 +29,8 @@ export interface QuizCallbacks {
   applySpeedDown: () => void;
   applyJumpUp: () => void;
   applyJumpDown: () => void;
+  applyJumpCountUp: () => void;
+  applyJumpCountDown: () => void;
   setGameState: (state: GameState) => void;
   addScore: (amount: number) => void;
   showEffect: (text: string, color: string) => void;
@@ -42,7 +44,8 @@ interface CardDef {
 }
 
 const REWARD_CARDS: CardDef[] = [
-  { type: "jump", title: "점프 UP", desc: "점프력 15% 증가", color: 0x2ecc71 },
+  { type: "jump", title: "점프력 UP", desc: "점프력 15% 증가", color: 0x2ecc71 },
+  { type: "jumpCount", title: "점프횟수 UP", desc: "점프 횟수 +1", color: 0x9b59b6 },
   { type: "speed", title: "속도 UP", desc: "이동속도 15% 증가", color: 0x3498db },
   { type: "score", title: `+${SCORE_BONUS}점`, desc: "즉시 점수 획득", color: 0xf1c40f },
 ];
@@ -199,10 +202,11 @@ export class QuizManager {
     this.callbacks.setGameState("choosing_reward");
     this.scene.physics.pause();
 
-    const cardW = 150;
+    const cardCount = REWARD_CARDS.length;
+    const cardW = 140;
     const cardH = 180;
-    const gap = 24;
-    const totalW = cardW * 3 + gap * 2;
+    const gap = 16;
+    const totalW = cardW * cardCount + gap * (cardCount - 1);
     const startX = (GAME_WIDTH - totalW) / 2;
     const cardY = (GAME_HEIGHT - cardH) / 2;
 
@@ -312,6 +316,15 @@ export class QuizManager {
         } else {
           this.callbacks.applyJumpDown();
           this.callbacks.showEffect(prefix + "JUMP DOWN!", color);
+        }
+        break;
+      case "jumpCount":
+        if (isCorrect) {
+          this.callbacks.applyJumpCountUp();
+          this.callbacks.showEffect(prefix + "JUMP COUNT UP!", color);
+        } else {
+          this.callbacks.applyJumpCountDown();
+          this.callbacks.showEffect(prefix + "JUMP COUNT DOWN!", color);
         }
         break;
       case "score": {

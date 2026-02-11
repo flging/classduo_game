@@ -60,6 +60,8 @@ export const SPEED_MULT_MIN = 0.4;
 export const SPEED_MULT_MAX = 2.5;
 export const JUMP_MULT_MIN = 0.4;
 export const JUMP_MULT_MAX = 2.5;
+export const JUMP_COUNT_MIN = 1;
+export const JUMP_COUNT_MAX = 4;
 export const SCORE_BONUS = 30;
 export const EFFECT_DISPLAY_MS = 1500;
 
