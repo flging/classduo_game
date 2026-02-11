@@ -1,10 +1,9 @@
 import Phaser from "phaser";
-import { ChoiceType } from "../quiz/quizTypes";
 import { QUIZ_WORD_WIDTH, QUIZ_WORD_HEIGHT } from "../constants";
 
 export class QuizItem extends Phaser.Physics.Arcade.Sprite {
   readonly keyword: string;
-  readonly choiceType: ChoiceType;
+  readonly isCorrect: boolean;
   private label: Phaser.GameObjects.Text;
 
   constructor(
@@ -12,12 +11,12 @@ export class QuizItem extends Phaser.Physics.Arcade.Sprite {
     x: number,
     y: number,
     keyword: string,
-    choiceType: ChoiceType
+    isCorrect: boolean
   ) {
     super(scene, x, y, "quizWord");
 
     this.keyword = keyword;
-    this.choiceType = choiceType;
+    this.isCorrect = isCorrect;
 
     scene.add.existing(this);
     scene.physics.add.existing(this);

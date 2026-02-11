@@ -30,7 +30,11 @@ import {
   HIT_FREEZE_DURATION,
   SPEED_BUFF_STEP,
   JUMP_BUFF_STEP,
+  SPEED_DEBUFF_STEP,
+  JUMP_DEBUFF_STEP,
+  SPEED_MULT_MIN,
   SPEED_MULT_MAX,
+  JUMP_MULT_MIN,
   JUMP_MULT_MAX,
   EFFECT_DISPLAY_MS,
 } from "../constants";
@@ -173,7 +177,9 @@ export class GameScene extends Phaser.Scene {
     this.quizManager = new QuizManager(this, this.quizItems, {
       getScrollSpeed: () => this.getEffectiveSpeed(),
       applySpeedUp: () => this.applySpeedUp(),
+      applySpeedDown: () => this.applySpeedDown(),
       applyJumpUp: () => this.applyJumpUp(),
+      applyJumpDown: () => this.applyJumpDown(),
       setGameState: (state: GameState) => {
         this.gameState = state;
       },
@@ -181,6 +187,7 @@ export class GameScene extends Phaser.Scene {
         this.score = Math.max(0, this.score + amount);
         this.scoreText.setText(String(this.score));
       },
+      showEffect: (text: string, color: string) => this.showEffect(text, color),
     });
   }
 
@@ -349,19 +356,37 @@ export class GameScene extends Phaser.Scene {
   private applySpeedUp(): void {
     this.scrollSpeedMultiplier = Phaser.Math.Clamp(
       this.scrollSpeedMultiplier * SPEED_BUFF_STEP,
-      1,
+      SPEED_MULT_MIN,
       SPEED_MULT_MAX
     );
     this.showEffect("SPEED UP!", "#3498db");
   }
 
+  private applySpeedDown(): void {
+    this.scrollSpeedMultiplier = Phaser.Math.Clamp(
+      this.scrollSpeedMultiplier * SPEED_DEBUFF_STEP,
+      SPEED_MULT_MIN,
+      SPEED_MULT_MAX
+    );
+    this.showEffect("SPEED DOWN!", "#e74c3c");
+  }
+
   private applyJumpUp(): void {
     this.player.jumpMultiplier = Phaser.Math.Clamp(
       this.player.jumpMultiplier * JUMP_BUFF_STEP,
-      1,
+      JUMP_MULT_MIN,
       JUMP_MULT_MAX
     );
     this.showEffect("JUMP UP!", "#2ecc71");
+  }
+
+  private applyJumpDown(): void {
+    this.player.jumpMultiplier = Phaser.Math.Clamp(
+      this.player.jumpMultiplier * JUMP_DEBUFF_STEP,
+      JUMP_MULT_MIN,
+      JUMP_MULT_MAX
+    );
+    this.showEffect("JUMP DOWN!", "#e74c3c");
   }
 
   private showEffect(text: string, color: string): void {
@@ -391,7 +416,8 @@ export class GameScene extends Phaser.Scene {
   // ---- Main update loop ----
 
   update(time: number, delta: number): void {
-    if (this.gameState === "game_over") return;
+    if (this.gameState === "game_over" || this.gameState === "choosing_reward")
+      return;
 
     this.player.update(time, delta);
 

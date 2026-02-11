@@ -1,1 +1,7 @@
+export interface QuizQuestion {
+  text: string;
+  correctAnswer: string;
+  wrongAnswers: string[];
+}
+
 export type ChoiceType = "speed" | "jump" | "score";
