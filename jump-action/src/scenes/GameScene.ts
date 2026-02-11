@@ -30,8 +30,6 @@ import {
   HIT_FREEZE_DURATION,
   SPEED_BUFF_STEP,
   JUMP_BUFF_STEP,
-  SPEED_DEBUFF_STEP,
-  SPEED_MULT_MIN,
   SPEED_MULT_MAX,
   JUMP_MULT_MAX,
   EFFECT_DISPLAY_MS,
@@ -174,8 +172,8 @@ export class GameScene extends Phaser.Scene {
   private createQuizManager(): void {
     this.quizManager = new QuizManager(this, this.quizItems, {
       getScrollSpeed: () => this.getEffectiveSpeed(),
-      applyBuff: () => this.applyBuff(),
-      applyDebuff: () => this.applyDebuff(),
+      applySpeedUp: () => this.applySpeedUp(),
+      applyJumpUp: () => this.applyJumpUp(),
       setGameState: (state: GameState) => {
         this.gameState = state;
       },
@@ -348,34 +346,22 @@ export class GameScene extends Phaser.Scene {
     return this.baseScrollSpeed * this.scrollSpeedMultiplier;
   }
 
-  private applyBuff(): void {
-    const types: Array<"speed" | "jump"> = ["speed", "jump"];
-    const type = types[Phaser.Math.Between(0, 1)];
-
-    if (type === "speed") {
-      this.scrollSpeedMultiplier = Phaser.Math.Clamp(
-        this.scrollSpeedMultiplier * SPEED_BUFF_STEP,
-        SPEED_MULT_MIN,
-        SPEED_MULT_MAX
-      );
-      this.showEffect("SPEED UP!", "#3498db");
-    } else {
-      this.player.jumpMultiplier = Phaser.Math.Clamp(
-        this.player.jumpMultiplier * JUMP_BUFF_STEP,
-        1,
-        JUMP_MULT_MAX
-      );
-      this.showEffect("JUMP UP!", "#2ecc71");
-    }
-  }
-
-  private applyDebuff(): void {
+  private applySpeedUp(): void {
     this.scrollSpeedMultiplier = Phaser.Math.Clamp(
-      this.scrollSpeedMultiplier * SPEED_DEBUFF_STEP,
-      SPEED_MULT_MIN,
+      this.scrollSpeedMultiplier * SPEED_BUFF_STEP,
+      1,
       SPEED_MULT_MAX
     );
-    this.showEffect("SPEED DOWN!", "#e74c3c");
+    this.showEffect("SPEED UP!", "#3498db");
+  }
+
+  private applyJumpUp(): void {
+    this.player.jumpMultiplier = Phaser.Math.Clamp(
+      this.player.jumpMultiplier * JUMP_BUFF_STEP,
+      1,
+      JUMP_MULT_MAX
+    );
+    this.showEffect("JUMP UP!", "#2ecc71");
   }
 
   private showEffect(text: string, color: string): void {

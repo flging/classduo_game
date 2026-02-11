@@ -1,7 +1,6 @@
 import Phaser from "phaser";
 import { QuizItem } from "../entities/QuizItem";
-import { QuizQuestion, BuffType } from "./quizTypes";
-import { QUIZ_QUESTIONS } from "./quizData";
+import { ChoiceType } from "./quizTypes";
 import {
   GAME_WIDTH,
   GAME_HEIGHT,
@@ -12,6 +11,7 @@ import {
   QUIZ_RESULT_MS,
   QUIZ_ITEM_HIGH_Y,
   QUIZ_ITEM_SPACING_X,
+  SCORE_BONUS,
 } from "../constants";
 
 export type GameState =
@@ -23,11 +23,22 @@ export type GameState =
 
 export interface QuizCallbacks {
   getScrollSpeed: () => number;
-  applyBuff: () => void;
-  applyDebuff: () => void;
+  applySpeedUp: () => void;
+  applyJumpUp: () => void;
   setGameState: (state: GameState) => void;
   addScore: (amount: number) => void;
 }
+
+interface ChoiceOption {
+  label: string;
+  type: ChoiceType;
+}
+
+const CHOICES: ChoiceOption[] = [
+  { label: "점프 UP", type: "jump" },
+  { label: "속도 UP", type: "speed" },
+  { label: "+30점", type: "score" },
+];
 
 export class QuizManager {
   private scene: Phaser.Scene;
@@ -35,7 +46,6 @@ export class QuizManager {
   private quizItems: Phaser.Physics.Arcade.Group;
   private bannerText: Phaser.GameObjects.Text | null = null;
   private resultText: Phaser.GameObjects.Text | null = null;
-  private usedQuestions: Set<number> = new Set();
   private timeoutTimer: Phaser.Time.TimerEvent | null = null;
 
   constructor(
@@ -49,14 +59,10 @@ export class QuizManager {
   }
 
   startQuiz(): void {
-    const question = this.pickQuestion();
-    if (!question) return;
-
     this.callbacks.setGameState("quiz_announce");
 
-    // Show banner
     this.bannerText = this.scene.add
-      .text(GAME_WIDTH / 2, 50, `먹으세요: ${question.correctAnswer}`, {
+      .text(GAME_WIDTH / 2, 50, "보상을 선택하세요!", {
         fontFamily: "monospace",
         fontSize: "22px",
         color: "#ffffff",
@@ -66,12 +72,10 @@ export class QuizManager {
       .setOrigin(0.5)
       .setDepth(10);
 
-    // After announce delay, spawn items
     this.scene.time.delayedCall(QUIZ_ANNOUNCE_MS, () => {
       this.callbacks.setGameState("quiz_active");
-      this.spawnQuizItems(question);
+      this.spawnChoiceItems();
 
-      // Timeout timer
       this.timeoutTimer = this.scene.time.delayedCall(QUIZ_WINDOW_MS, () => {
         this.handleTimeout();
       });
@@ -79,21 +83,26 @@ export class QuizManager {
   }
 
   handleCollection(item: QuizItem): void {
-    // Cancel timeout
     if (this.timeoutTimer) {
       this.timeoutTimer.remove();
       this.timeoutTimer = null;
     }
 
-    // Remove all quiz items
     this.clearQuizItems();
 
-    if (item.isCorrect) {
-      this.callbacks.applyBuff();
-      this.showResult("정답!", "#2ecc71");
-    } else {
-      this.callbacks.applyDebuff();
-      this.showResult("오답!", "#e74c3c");
+    switch (item.choiceType) {
+      case "speed":
+        this.callbacks.applySpeedUp();
+        this.showResult("SPEED UP!", "#3498db");
+        break;
+      case "jump":
+        this.callbacks.applyJumpUp();
+        this.showResult("JUMP UP!", "#2ecc71");
+        break;
+      case "score":
+        this.callbacks.addScore(SCORE_BONUS);
+        this.showResult(`+${SCORE_BONUS}점!`, "#f1c40f");
+        break;
     }
   }
 
@@ -107,38 +116,20 @@ export class QuizManager {
     }
   }
 
-  private pickQuestion(): QuizQuestion | null {
-    // Reset pool if all used
-    if (this.usedQuestions.size >= QUIZ_QUESTIONS.length) {
-      this.usedQuestions.clear();
-    }
-
-    const available = QUIZ_QUESTIONS.filter(
-      (_, i) => !this.usedQuestions.has(i)
-    );
-    const idx = Phaser.Math.Between(0, available.length - 1);
-    const originalIdx = QUIZ_QUESTIONS.indexOf(available[idx]);
-    this.usedQuestions.add(originalIdx);
-
-    return available[idx];
-  }
-
-  private spawnQuizItems(question: QuizQuestion): void {
-    const allWords = [question.correctAnswer, ...question.wrongAnswers];
-    Phaser.Utils.Array.Shuffle(allWords);
-
+  private spawnChoiceItems(): void {
     const speed = this.callbacks.getScrollSpeed();
     const startX = GAME_WIDTH + 50;
     const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
     const lowY = groundTop - 25;
 
-    allWords.forEach((word, i) => {
+    const shuffled = Phaser.Utils.Array.Shuffle([...CHOICES]);
+
+    shuffled.forEach((choice, i) => {
       const isHigh = i % 2 === 0;
       const y = isHigh ? QUIZ_ITEM_HIGH_Y : lowY;
       const x = startX + i * QUIZ_ITEM_SPACING_X;
-      const isCorrect = word === question.correctAnswer;
 
-      const item = new QuizItem(this.scene, x, y, word, isCorrect);
+      const item = new QuizItem(this.scene, x, y, choice.label, choice.type);
       this.quizItems.add(item);
       item.setScrollSpeed(speed);
     });
@@ -146,7 +137,6 @@ export class QuizManager {
 
   private handleTimeout(): void {
     this.clearQuizItems();
-    this.callbacks.addScore(-3);
     this.showResult("시간 초과!", "#e67e22");
   }
 
