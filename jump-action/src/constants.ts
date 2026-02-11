@@ -65,6 +65,10 @@ export const JUMP_COUNT_MAX = 4;
 export const SCORE_BONUS = 30;
 export const EFFECT_DISPLAY_MS = 1500;
 
+// Time gauge
+export const TIME_GAUGE_MAX_MS = 60000;  // 60초
+export const TIME_GAUGE_HEIGHT = 6;
+
 // Fall death
 export const FALL_DEATH_Y = GAME_HEIGHT + 50;
 

@@ -37,6 +37,8 @@ import {
   JUMP_MULT_MAX,
   JUMP_COUNT_MIN,
   JUMP_COUNT_MAX,
+  TIME_GAUGE_MAX_MS,
+  TIME_GAUGE_HEIGHT,
   EFFECT_DISPLAY_MS,
 } from "../constants";
 
@@ -62,6 +64,10 @@ export class GameScene extends Phaser.Scene {
   private jumpStacks = 0;
   private jumpCountStacks = 0;
 
+  private timeRemaining = TIME_GAUGE_MAX_MS;
+  private timeGaugeBg!: Phaser.GameObjects.Graphics;
+  private timeGaugeFill!: Phaser.GameObjects.Graphics;
+
   private quizManager!: QuizManager;
   private effectDisplayTimer?: Phaser.Time.TimerEvent;
 
@@ -81,6 +87,7 @@ export class GameScene extends Phaser.Scene {
     this.distanceTraveled = 0;
     this.totalCoinsCollected = 0;
     this.lastQuizCoinThreshold = 0;
+    this.timeRemaining = TIME_GAUGE_MAX_MS;
 
     // Extend world bounds downward for fall death
     this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT + 200);
@@ -137,6 +144,14 @@ export class GameScene extends Phaser.Scene {
       })
       .setOrigin(1, 0)
       .setDepth(5);
+
+    // Time gauge bar
+    this.timeGaugeBg = this.add.graphics().setDepth(5);
+    this.timeGaugeBg.fillStyle(0x333333, 1);
+    this.timeGaugeBg.fillRect(0, 0, GAME_WIDTH, TIME_GAUGE_HEIGHT);
+
+    this.timeGaugeFill = this.add.graphics().setDepth(5);
+    this.updateTimeGauge();
 
     this.effectText = this.add
       .text(GAME_WIDTH / 2, 20, "", {
@@ -427,6 +442,22 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  // ---- Time gauge ----
+
+  private updateTimeGauge(): void {
+    const ratio = this.timeRemaining / TIME_GAUGE_MAX_MS;
+    const width = GAME_WIDTH * ratio;
+
+    let color: number;
+    if (ratio > 0.5) color = 0x2ecc71;
+    else if (ratio > 0.25) color = 0xf39c12;
+    else color = 0xe74c3c;
+
+    this.timeGaugeFill.clear();
+    this.timeGaugeFill.fillStyle(color, 1);
+    this.timeGaugeFill.fillRect(0, 0, width, TIME_GAUGE_HEIGHT);
+  }
+
   // ---- Sync scroll speed to all entities ----
 
   private syncScrollSpeed(): void {
@@ -448,6 +479,16 @@ export class GameScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     if (this.gameState === "game_over" || this.gameState === "choosing_reward")
       return;
+
+    // Time gauge
+    this.timeRemaining -= delta;
+    if (this.timeRemaining <= 0) {
+      this.timeRemaining = 0;
+      this.updateTimeGauge();
+      this.triggerGameOver();
+      return;
+    }
+    this.updateTimeGauge();
 
     this.player.update(time, delta);
 
