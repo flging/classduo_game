@@ -17,6 +17,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private lastGroundedAt = 0;
   private jumpBufferedAt = 0;
   private jumpHeld = false;
+  private justJumped = false;
 
   jumpMultiplier = 1;
 
@@ -35,7 +36,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (onGround) {
       this.lastGroundedAt = time;
-      this.jumpCount = 0;
+      if (!this.justJumped) {
+        this.jumpCount = 0;
+      }
+    } else {
+      this.justJumped = false;
     }
 
     if (onGround && time - this.jumpBufferedAt < JUMP_BUFFER_MS) {
@@ -76,6 +81,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.jumpBufferedAt = 0;
     this.jumpHeld = false;
     this.jumpMultiplier = 1;
+    this.justJumped = false;
     this.clearTint();
     this.setVelocity(0, 0);
     (this.body as Phaser.Physics.Arcade.Body).setGravityY(0);
@@ -85,6 +91,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setVelocityY(JUMP_VELOCITY * this.jumpMultiplier);
     this.jumpCount++;
     this.jumpBufferedAt = 0;
+    this.justJumped = true;
   }
 
   private applyVariableGravity(body: Phaser.Physics.Arcade.Body): void {
