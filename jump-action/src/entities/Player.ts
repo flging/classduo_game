@@ -94,10 +94,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.isRunning = true;
       }
     } else {
-      // In the air (no spin) → static frame
-      if (this.isRunning) {
+      // In the air (no spin) → jump frame with >< eyes
+      if (this.isRunning || this.texture.key !== "player_jump") {
         this.stop();
-        this.setTexture("player_run0");
+        this.setTexture("player_jump");
         this.isRunning = false;
       }
     }

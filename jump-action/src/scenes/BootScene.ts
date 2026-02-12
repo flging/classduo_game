@@ -27,7 +27,8 @@ export class BootScene extends Phaser.Scene {
   private drawHoodieBody(
     g: Phaser.GameObjects.Graphics,
     cx: number,
-    topPad: number
+    topPad: number,
+    squintEyes = false
   ): void {
     const bodyX = 4;
     const bodyY = topPad;
@@ -94,12 +95,26 @@ export class BootScene extends Phaser.Scene {
 
     // Eyes
     const eyeY = topPad + 13;
-    g.fillStyle(0xffffff);
-    g.fillCircle(cx + 2, eyeY, 5);
-    g.fillCircle(cx + 10, eyeY, 4);
-    g.fillStyle(0x222222);
-    g.fillCircle(cx + 4, eyeY, 2.5);
-    g.fillCircle(cx + 11, eyeY, 2);
+    if (squintEyes) {
+      // >< squint eyes
+      const es = 3; // half-size of each chevron
+      g.lineStyle(1.8, 0x222222);
+      // > (left eye)
+      const lx = cx + 3;
+      g.lineBetween(lx - es, eyeY - es, lx + es, eyeY);
+      g.lineBetween(lx + es, eyeY, lx - es, eyeY + es);
+      // < (right eye)
+      const rx = cx + 11;
+      g.lineBetween(rx + es, eyeY - es, rx - es, eyeY);
+      g.lineBetween(rx - es, eyeY, rx + es, eyeY + es);
+    } else {
+      g.fillStyle(0xffffff);
+      g.fillCircle(cx + 2, eyeY, 5);
+      g.fillCircle(cx + 10, eyeY, 4);
+      g.fillStyle(0x222222);
+      g.fillCircle(cx + 4, eyeY, 2.5);
+      g.fillCircle(cx + 11, eyeY, 2);
+    }
 
     // Blush
     g.fillStyle(0xffaaaa, 0.5);
@@ -158,11 +173,28 @@ export class BootScene extends Phaser.Scene {
       g.destroy();
     }
 
-    // --- Spin frame (tucked short legs) ---
+    // --- Jump frame (static legs, >< eyes) ---
     {
       const g = this.add.graphics();
       const cx = w / 2;
-      this.drawHoodieBody(g, cx, topPad);
+      this.drawHoodieBody(g, cx, topPad, true);
+
+      const leftX = cx - 6;
+      const rightX = cx + 1;
+      const legW = 7;
+      const shoeH = 3;
+      this.drawLeg(g, leftX, topPad + 38, legW, 12, shoeH, legR);
+      this.drawLeg(g, rightX, topPad + 40, legW, 10, shoeH, legR);
+
+      g.generateTexture("player_jump", w, h);
+      g.destroy();
+    }
+
+    // --- Spin frame (tucked short legs, >< eyes) ---
+    {
+      const g = this.add.graphics();
+      const cx = w / 2;
+      this.drawHoodieBody(g, cx, topPad, true);
 
       const leftX = cx - 6;
       const rightX = cx + 1;
