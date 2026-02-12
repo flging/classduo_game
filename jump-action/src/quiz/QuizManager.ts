@@ -54,6 +54,21 @@ interface CardDef {
   color: number;
 }
 
+// Color helpers to derive gradient/outline/shine from base color
+function darken(color: number, amount: number): number {
+  const r = Math.max(0, ((color >> 16) & 0xff) - amount);
+  const g = Math.max(0, ((color >> 8) & 0xff) - amount);
+  const b = Math.max(0, (color & 0xff) - amount);
+  return (r << 16) | (g << 8) | b;
+}
+
+function lighten(color: number, amount: number): number {
+  const r = Math.min(255, ((color >> 16) & 0xff) + amount);
+  const g = Math.min(255, ((color >> 8) & 0xff) + amount);
+  const b = Math.min(255, (color & 0xff) + amount);
+  return (r << 16) | (g << 8) | b;
+}
+
 const REWARD_CARDS: CardDef[] = [
   { type: "jump", title: "점프력 UP", desc: "점프력 15% 증가", color: 0x2ecc71 },
   { type: "jumpCount", title: "점프횟수 UP", desc: "점프 횟수 +1", color: 0x9b59b6 },
@@ -290,12 +305,27 @@ export class QuizManager {
         ease: "Back.Out",
       });
 
-      // Background
+      // Background (game style: gradient + outline + shine)
       const bg = this.scene.add.graphics();
+      const hx = -cardW / 2;
+      const hy = -cardH / 2;
+      const r = 12;
+
+      // Dark base (bottom gradient)
+      bg.fillStyle(darken(card.color, 25), 1);
+      bg.fillRoundedRect(hx, hy, cardW, cardH, r);
+
+      // Main fill (top 75%)
       bg.fillStyle(card.color, 1);
-      bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 12);
-      bg.fillStyle(0x000000, 0.15);
-      bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 12);
+      bg.fillRoundedRect(hx, hy, cardW, cardH * 0.75, { tl: r, tr: r, bl: 0, br: 0 });
+
+      // Shine highlight (top strip)
+      bg.fillStyle(lighten(card.color, 30), 0.3);
+      bg.fillRoundedRect(hx + 3, hy + 2, cardW - 6, cardH * 0.2, { tl: r, tr: r, bl: 0, br: 0 });
+
+      // Outline (darker shade, 2px like character/heart)
+      bg.lineStyle(2, darken(card.color, 50), 1);
+      bg.strokeRoundedRect(hx, hy, cardW, cardH, r);
       container.add(bg);
 
       // Title
@@ -305,6 +335,8 @@ export class QuizManager {
           fontSize: "18px",
           color: "#ffffff",
           fontStyle: "bold",
+          stroke: "#000000",
+          strokeThickness: 3,
         })
         .setOrigin(0.5);
       container.add(cardTitle);
@@ -314,7 +346,9 @@ export class QuizManager {
         .text(0, 20, card.desc, {
           fontFamily: "monospace",
           fontSize: "12px",
-          color: "#ffffffcc",
+          color: "#ffffff",
+          stroke: "#000000",
+          strokeThickness: 2,
         })
         .setOrigin(0.5);
       container.add(cardDesc);
