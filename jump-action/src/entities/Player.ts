@@ -33,7 +33,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // Physics body covers only the hoodie body, not the legs
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setSize(30, 38);
-    body.setOffset(5, 2);
+    body.setOffset(5, 5);
 
     // Run animation (2-frame leg alternation)
     if (!scene.anims.exists("run")) {
@@ -100,7 +100,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Ensure body size stays correct after texture swap
     body.setSize(30, 38);
-    body.setOffset(5, 2);
+    body.setOffset(5, 5);
 
     this.applyVariableGravity(body);
   }
@@ -142,7 +142,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setGravityY(0);
     body.setSize(30, 38);
-    body.setOffset(5, 2);
+    body.setOffset(5, 5);
   }
 
   private executeJump(): void {

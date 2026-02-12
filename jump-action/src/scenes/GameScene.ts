@@ -145,7 +145,7 @@ export class GameScene extends Phaser.Scene {
     // Body: offset(5,2), size(30,38) → body bottom at y - 26 + 2 + 38 = y + 14
     // Ground surface: groundTop. We want body bottom = groundTop → y = groundTop - 14
     const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
-    const bodyBottomFromCenter = -PLAYER_TEX_HEIGHT / 2 + 2 + 38; // 14
+    const bodyBottomFromCenter = -PLAYER_TEX_HEIGHT / 2 + 5 + 38; // 15
     const playerY = groundTop - bodyBottomFromCenter;
     this.player = new Player(this, PLAYER_X, playerY);
   }
