@@ -25,6 +25,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private jumpHeld = false;
   private justJumped = false;
   private spinning = false;
+  private ducking = false;
   private isRunning = false;
   private wasInAir = false;
   private squashTween?: Phaser.Tweens.Tween;
@@ -73,14 +74,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.lastLandTime = time;
       this.emit('land', this.x, this.y);
       this.squashTween?.stop();
-      this.setScale(1.4, 0.6);
-      this.squashTween = this.scene.tweens.add({
-        targets: this,
-        scaleX: 1,
-        scaleY: 1,
-        duration: 300,
-        ease: 'Back.Out',
-      });
+      if (this.ducking) {
+        this.setScale(1.3, 0.5);
+      } else {
+        this.setScale(1.4, 0.6);
+        this.squashTween = this.scene.tweens.add({
+          targets: this,
+          scaleX: 1,
+          scaleY: 1,
+          duration: 300,
+          ease: 'Back.Out',
+        });
+      }
     }
     this.wasInAir = !onGround;
 
@@ -131,8 +136,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     // Ensure body size stays correct after texture swap
-    body.setSize(30, 38);
-    body.setOffset(5, 5);
+    if (this.ducking) {
+      body.setSize(30, 19);
+      body.setOffset(5, 24);
+    } else {
+      body.setSize(30, 38);
+      body.setOffset(5, 5);
+    }
 
     this.applyVariableGravity(body);
 
@@ -176,6 +186,31 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.jumpHeld = false;
   }
 
+  get isDucking(): boolean {
+    return this.ducking;
+  }
+
+  startDuck(): void {
+    if (this.ducking) return;
+    this.ducking = true;
+    this.squashTween?.stop();
+    // Compensate y so body bottom stays at same world position
+    // scaleY 1→0.5 shifts body bottom up by 8.5px
+    this.y += 8.5;
+    this.setScale(1.3, 0.5);
+    this.setAngle(-10);
+  }
+
+  endDuck(): void {
+    if (!this.ducking) return;
+    this.ducking = false;
+    // Compensate y so body bottom stays at same world position
+    // scaleY 0.5→1 shifts body bottom down by 8.5px
+    this.y -= 8.5;
+    this.setScale(1, 1);
+    this.setAngle(0);
+  }
+
   resetState(): void {
     this.jumpCount = 0;
     this.lastGroundedAt = 0;
@@ -185,6 +220,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.jumpMultiplier = 1;
     this.justJumped = false;
     this.spinning = false;
+    this.ducking = false;
     this.isRunning = false;
     this.wasInAir = false;
     this.trail.clear();
@@ -214,6 +250,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private executeJump(): void {
+    if (this.ducking) {
+      this.endDuck();
+    }
     this.setVelocityY(JUMP_VELOCITY * this.jumpMultiplier);
     this.jumpCount++;
     this.jumpBufferedAt = 0;

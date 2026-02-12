@@ -91,6 +91,7 @@ export class GameScene extends Phaser.Scene {
   private mountainLayer!: Phaser.GameObjects.TileSprite;
   private quizManager!: QuizManager;
   private effectDisplayTimer?: Phaser.Time.TimerEvent;
+  private lastSlideDustTime = 0;
 
   constructor() {
     super({ key: "GameScene" });
@@ -112,6 +113,7 @@ export class GameScene extends Phaser.Scene {
     this.hpMax = HP_MAX;
     this.hpDecayStacks = 0;
     this.hpDecayMultiplier = 1;
+    this.lastSlideDustTime = 0;
 
     // Extend world bounds downward for fall death
     this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT + 200);
@@ -233,6 +235,8 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.on("keydown-UP", this.handleJumpDown, this);
     this.input.keyboard?.on("keyup-SPACE", this.handleJumpUp, this);
     this.input.keyboard?.on("keyup-UP", this.handleJumpUp, this);
+    this.input.keyboard?.on("keydown-DOWN", this.handleDuckDown, this);
+    this.input.keyboard?.on("keyup-DOWN", this.handleDuckUp, this);
     this.input.on("pointerdown", this.handleJumpDown, this);
     this.input.on("pointerup", this.handleJumpUp, this);
   }
@@ -271,6 +275,16 @@ export class GameScene extends Phaser.Scene {
 
   private handleJumpUp = (): void => {
     this.player.releaseJump();
+  };
+
+  private handleDuckDown = (): void => {
+    if (this.gameState !== "game_over") {
+      this.player.startDuck();
+    }
+  };
+
+  private handleDuckUp = (): void => {
+    this.player.endDuck();
   };
 
   // ---- Ground spawning ----
@@ -646,6 +660,34 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  private spawnSlideDust(): void {
+    const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
+    const x = this.player.x - 5;
+    const y = groundTop;
+
+    for (let i = 0; i < 2; i++) {
+      const g = this.add.graphics();
+      g.setDepth(1);
+      const size = Phaser.Math.Between(1, 3);
+      g.fillStyle(COLOR_GROUND, 0.5);
+      g.fillCircle(0, 0, size);
+      g.setPosition(
+        x + Phaser.Math.Between(-8, 8),
+        y + Phaser.Math.Between(-4, 2)
+      );
+
+      this.tweens.add({
+        targets: g,
+        x: g.x - Phaser.Math.Between(20, 40),
+        y: g.y - Phaser.Math.Between(5, 15),
+        alpha: 0,
+        duration: 350,
+        ease: 'Power2',
+        onComplete: () => g.destroy(),
+      });
+    }
+  }
+
   private spawnJumpBurst(x: number, y: number, jumpCount: number): void {
     if (jumpCount < 2) return;
     const footY = y + PLAYER_TEX_HEIGHT / 4;
@@ -715,6 +757,15 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.player.update(time, delta);
+
+    // Slide dust particles
+    const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
+    if (this.player.isDucking && playerBody.blocked.down) {
+      if (time - this.lastSlideDustTime > 80) {
+        this.lastSlideDustTime = time;
+        this.spawnSlideDust();
+      }
+    }
 
     const scrollDelta = Math.abs(this.getEffectiveSpeed()) * (delta / 1000);
     this.distanceTraveled += scrollDelta;
