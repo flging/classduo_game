@@ -74,6 +74,7 @@ export class QuizManager {
   private timeoutTimer: Phaser.Time.TimerEvent | null = null;
   private rewardUI: Phaser.GameObjects.GameObject[] = [];
   private previewMarkers: Phaser.GameObjects.GameObject[] = [];
+  private itemYPositions: number[] = [];
 
   constructor(
     scene: Phaser.Scene,
@@ -106,6 +107,13 @@ export class QuizManager {
       question.correctAnswer,
       ...question.wrongAnswers,
     ]);
+
+    // Generate random Y positions for each item
+    const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
+    const lowY = groundTop - QUIZ_ITEM_SIZE / 2 - 5;
+    this.itemYPositions = allWords.map(
+      () => Phaser.Math.Between(QUIZ_ITEM_HIGH_Y, lowY)
+    );
 
     this.spawnPreviewMarkers(allWords);
 
@@ -166,12 +174,9 @@ export class QuizManager {
   private spawnQuizItems(words: string[], correctAnswer: string): void {
     const speed = this.callbacks.getScrollSpeed();
     const startX = GAME_WIDTH + 50;
-    const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
-    const lowY = groundTop - 25;
 
     words.forEach((word, i) => {
-      const isHigh = i % 2 === 0;
-      const y = isHigh ? QUIZ_ITEM_HIGH_Y : lowY;
+      const y = this.itemYPositions[i];
       const x = startX + i * QUIZ_ITEM_SPACING_X;
       const isCorrect = word === correctAnswer;
 
@@ -437,14 +442,11 @@ export class QuizManager {
   }
 
   private spawnPreviewMarkers(words: string[]): void {
-    const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
-    const lowY = groundTop - 25;
     const totalWidth = (words.length - 1) * QUIZ_ITEM_SPACING_X;
     const startX = (GAME_WIDTH - totalWidth) / 2;
 
     words.forEach((word, i) => {
-      const isHigh = i % 2 === 0;
-      const y = isHigh ? QUIZ_ITEM_HIGH_Y : lowY;
+      const y = this.itemYPositions[i];
       const x = startX + i * QUIZ_ITEM_SPACING_X;
 
       const container = this.scene.add.container(x, y).setDepth(5);
