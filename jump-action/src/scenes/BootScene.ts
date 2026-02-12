@@ -21,6 +21,7 @@ export class BootScene extends Phaser.Scene {
     this.createGroundTileTexture();
     this.createCoinTexture();
     this.createMeteorTexture();
+    this.createMountainTexture();
     this.scene.start("GameScene");
   }
 
@@ -284,6 +285,37 @@ export class BootScene extends Phaser.Scene {
     g.fillCircle(size / 2 - 2, size / 2 - 2, size / 4);
 
     g.generateTexture("coin", size, size);
+    g.destroy();
+  }
+
+  private createMountainTexture(): void {
+    const w = 800;
+    const h = 120;
+    const g = this.add.graphics();
+
+    // Mountain silhouette in light blue-gray
+    g.fillStyle(0xb0c4d8);
+    g.beginPath();
+    g.moveTo(0, h);
+    g.lineTo(0, 90);
+    g.lineTo(60, 40);
+    g.lineTo(120, 70);
+    g.lineTo(180, 20);
+    g.lineTo(250, 60);
+    g.lineTo(320, 35);
+    g.lineTo(400, 55);
+    g.lineTo(460, 15);
+    g.lineTo(530, 50);
+    g.lineTo(580, 30);
+    g.lineTo(650, 65);
+    g.lineTo(720, 25);
+    g.lineTo(770, 55);
+    g.lineTo(800, 45);
+    g.lineTo(800, h);
+    g.closePath();
+    g.fillPath();
+
+    g.generateTexture("mountains_far", w, h);
     g.destroy();
   }
 

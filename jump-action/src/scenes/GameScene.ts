@@ -88,6 +88,7 @@ export class GameScene extends Phaser.Scene {
   private hpGaugeFrame!: Phaser.GameObjects.Graphics;
   private hpGaugeFill!: Phaser.GameObjects.Graphics;
 
+  private mountainLayer!: Phaser.GameObjects.TileSprite;
   private quizManager!: QuizManager;
   private effectDisplayTimer?: Phaser.Time.TimerEvent;
 
@@ -114,6 +115,14 @@ export class GameScene extends Phaser.Scene {
 
     // Extend world bounds downward for fall death
     this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT + 200);
+
+    // Parallax mountain background
+    const mountainH = 120;
+    const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
+    this.mountainLayer = this.add
+      .tileSprite(0, groundTop - mountainH, GAME_WIDTH, mountainH, "mountains_far")
+      .setOrigin(0, 0)
+      .setDepth(0);
 
     this.createGroups();
     this.createPlayer();
@@ -680,6 +689,9 @@ export class GameScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     if (this.gameState === "game_over" || this.gameState === "choosing_reward")
       return;
+
+    // Parallax mountain scroll (slower than ground)
+    this.mountainLayer.tilePositionX -= this.getEffectiveSpeed() * 0.15 * (delta / 1000);
 
     // HP gauge
     this.hp -= delta * this.hpDecayMultiplier;
