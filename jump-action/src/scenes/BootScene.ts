@@ -28,7 +28,7 @@ export class BootScene extends Phaser.Scene {
     g: Phaser.GameObjects.Graphics,
     cx: number,
     topPad: number,
-    squintEyes = false
+    eyeStyle: "normal" | "squint" | "dead" = "normal"
   ): void {
     const bodyX = 4;
     const bodyY = topPad;
@@ -95,18 +95,26 @@ export class BootScene extends Phaser.Scene {
 
     // Eyes
     const eyeY = topPad + 13;
-    if (squintEyes) {
+    if (eyeStyle === "squint") {
       // >< squint eyes
-      const es = 3; // half-size of each chevron
+      const es = 3;
       g.lineStyle(1.8, 0x222222);
-      // > (left eye)
       const lx = cx + 3;
       g.lineBetween(lx - es, eyeY - es, lx + es, eyeY);
       g.lineBetween(lx + es, eyeY, lx - es, eyeY + es);
-      // < (right eye)
       const rx = cx + 11;
       g.lineBetween(rx + es, eyeY - es, rx - es, eyeY);
       g.lineBetween(rx - es, eyeY, rx + es, eyeY + es);
+    } else if (eyeStyle === "dead") {
+      // x x dead eyes
+      const es = 2.5;
+      g.lineStyle(1.8, 0x222222);
+      const lx = cx + 4;
+      g.lineBetween(lx - es, eyeY - es, lx + es, eyeY + es);
+      g.lineBetween(lx + es, eyeY - es, lx - es, eyeY + es);
+      const rx = cx + 11;
+      g.lineBetween(rx - es, eyeY - es, rx + es, eyeY + es);
+      g.lineBetween(rx + es, eyeY - es, rx - es, eyeY + es);
     } else {
       g.fillStyle(0xffffff);
       g.fillCircle(cx + 2, eyeY, 5);
@@ -177,7 +185,7 @@ export class BootScene extends Phaser.Scene {
     {
       const g = this.add.graphics();
       const cx = w / 2;
-      this.drawHoodieBody(g, cx, topPad, true);
+      this.drawHoodieBody(g, cx, topPad, "squint");
 
       const leftX = cx - 6;
       const rightX = cx + 1;
@@ -194,7 +202,7 @@ export class BootScene extends Phaser.Scene {
     {
       const g = this.add.graphics();
       const cx = w / 2;
-      this.drawHoodieBody(g, cx, topPad, true);
+      this.drawHoodieBody(g, cx, topPad, "squint");
 
       const leftX = cx - 6;
       const rightX = cx + 1;
@@ -207,6 +215,23 @@ export class BootScene extends Phaser.Scene {
       this.drawLeg(g, rightX, tuckY, legW, tuckH, shoeH, legR);
 
       g.generateTexture("player_spin", w, h);
+      g.destroy();
+    }
+
+    // --- Dead frame (x x eyes, static legs) ---
+    {
+      const g = this.add.graphics();
+      const cx = w / 2;
+      this.drawHoodieBody(g, cx, topPad, "dead");
+
+      const leftX = cx - 6;
+      const rightX = cx + 1;
+      const legW = 7;
+      const shoeH = 3;
+      this.drawLeg(g, leftX, topPad + 38, legW, 12, shoeH, legR);
+      this.drawLeg(g, rightX, topPad + 40, legW, 10, shoeH, legR);
+
+      g.generateTexture("player_dead", w, h);
       g.destroy();
     }
   }

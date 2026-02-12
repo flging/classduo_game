@@ -676,6 +676,9 @@ export class GameScene extends Phaser.Scene {
       (obj as Coin).setVelocityX(0);
     });
 
+    this.player.stop();
+    this.player.setTexture("player_dead");
+    this.player.setAngle(0);
     this.player.setTint(0xff0000);
 
     this.time.delayedCall(HIT_FREEZE_DURATION, () => {
