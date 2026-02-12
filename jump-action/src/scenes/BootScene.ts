@@ -69,7 +69,7 @@ export class BootScene extends Phaser.Scene {
     g.strokePath();
 
     // Center seam (과잠 zipper line)
-    const seamX = bodyX + bodyW / 2;
+    const seamX = cx + 7; // midpoint between eyes, shifted toward gaze
     const seamTop = bodyY + 24;
     const seamBot = bodyY + bodyH - 2;
     g.lineStyle(2, 0x922b21);
