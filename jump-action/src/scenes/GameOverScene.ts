@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { GAME_WIDTH, GAME_HEIGHT, RESTART_DELAY } from "../constants";
+import { S, GAME_WIDTH, GAME_HEIGHT, RESTART_DELAY } from "../constants";
 
 export class GameOverScene extends Phaser.Scene {
   private score = 0;
@@ -30,10 +30,10 @@ export class GameOverScene extends Phaser.Scene {
     const titleText = this.add
       .text(GAME_WIDTH / 2, GAME_HEIGHT * 0.35, "", {
         fontFamily: "monospace",
-        fontSize: "48px",
+        fontSize: `${48 * S}px`,
         color: "#ffffff",
         fontStyle: "bold",
-        shadow: { offsetX: 2, offsetY: 2, color: "#000000", blur: 6, fill: true },
+        shadow: { offsetX: 2 * S, offsetY: 2 * S, color: "#000000", blur: 6 * S, fill: true },
       })
       .setOrigin(0.5);
 
@@ -52,9 +52,9 @@ export class GameOverScene extends Phaser.Scene {
     const scoreText = this.add
       .text(GAME_WIDTH / 2, GAME_HEIGHT * 0.52, "Score: 0", {
         fontFamily: "monospace",
-        fontSize: "28px",
+        fontSize: `${28 * S}px`,
         color: "#f0c040",
-        shadow: { offsetX: 1, offsetY: 1, color: "#000000", blur: 4, fill: true },
+        shadow: { offsetX: 1 * S, offsetY: 1 * S, color: "#000000", blur: 4 * S, fill: true },
       })
       .setOrigin(0.5)
       .setAlpha(0);
@@ -96,7 +96,7 @@ export class GameOverScene extends Phaser.Scene {
         "Press SPACE or Click to Restart",
         {
           fontFamily: "monospace",
-          fontSize: "18px",
+          fontSize: `${18 * S}px`,
           color: "#cccccc",
         }
       )

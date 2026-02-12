@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { QUIZ_ITEM_SIZE } from "../constants";
+import { S, QUIZ_ITEM_SIZE } from "../constants";
 
 export class QuizItem extends Phaser.Physics.Arcade.Sprite {
   readonly keyword: string;
@@ -41,7 +41,7 @@ export class QuizItem extends Phaser.Physics.Arcade.Sprite {
       const t = i / trailCount;
       const radius = (QUIZ_ITEM_SIZE / 3) * (1 - t * 0.8);
       const alpha = 0.4 * (1 - t);
-      const offsetX = i * 10;
+      const offsetX = i * 10 * S;
       this.trail.fillStyle(0xff6b35, alpha);
       this.trail.fillCircle(this.x + offsetX, this.y, radius);
     }

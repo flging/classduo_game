@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import {
+  S,
   GAME_WIDTH,
   HP_ICON_RADIUS,
   HP_BAR_X,
@@ -55,9 +56,9 @@ export class UIManager {
   create(): void {
     // Score
     this.scoreText = this.scene.add
-      .text(GAME_WIDTH - 20, 20, "0", {
+      .text(GAME_WIDTH - 20 * S, 20 * S, "0", {
         fontFamily: "monospace",
-        fontSize: "28px",
+        fontSize: `${28 * S}px`,
         color: "#333333",
         fontStyle: "bold",
       })
@@ -65,9 +66,9 @@ export class UIManager {
       .setDepth(DEPTH_HUD);
 
     this.scene.add
-      .text(GAME_WIDTH - 80, 22, "COIN", {
+      .text(GAME_WIDTH - 80 * S, 22 * S, "COIN", {
         fontFamily: "monospace",
-        fontSize: "14px",
+        fontSize: `${14 * S}px`,
         color: "#d4a017",
         fontStyle: "bold",
       })
@@ -82,13 +83,13 @@ export class UIManager {
 
     // Effect text
     this.effectText = this.scene.add
-      .text(GAME_WIDTH / 2, 20, "", {
+      .text(GAME_WIDTH / 2, 20 * S, "", {
         fontFamily: "monospace",
-        fontSize: "16px",
+        fontSize: `${16 * S}px`,
         color: "#ffffff",
         fontStyle: "bold",
         backgroundColor: "#00000066",
-        padding: { x: 8, y: 4 },
+        padding: { x: 8 * S, y: 4 * S },
       })
       .setOrigin(0.5, 0)
       .setDepth(DEPTH_QUIZ)
@@ -179,7 +180,7 @@ export class UIManager {
     g.closePath();
     g.fillPath();
 
-    g.lineStyle(2, 0x922b21, 1);
+    g.lineStyle(2 * S, 0x922b21, 1);
     g.beginPath();
     g.arc(lx, topY, bulgeR, Math.PI, 0, false);
     g.arc(rx, topY, bulgeR, Math.PI, 0, false);
@@ -202,24 +203,24 @@ export class UIManager {
     const br = HP_BAR_RADIUS;
     const pad = HP_BAR_PADDING;
 
-    // Background fill (like character body base)
+    // Background fill
     g.fillStyle(HP_FRAME_BG, 1);
     g.fillRoundedRect(bx, by, barW, bh, br);
 
-    // Outline stroke (like character/heart 2px outline)
-    g.lineStyle(2, HP_FRAME_OUTLINE, 1);
+    // Outline stroke
+    g.lineStyle(2 * S, HP_FRAME_OUTLINE, 1);
     g.strokeRoundedRect(bx, by, barW, bh, br);
 
     // Segment lines at 25%, 50%, 75%
-    g.lineStyle(1, HP_SEGMENT_COLOR, 0.4);
+    g.lineStyle(1 * S, HP_SEGMENT_COLOR, 0.4);
     const innerW = barW - pad * 2;
     for (const frac of [0.25, 0.5, 0.75]) {
       const lx = bx + pad + innerW * frac;
       g.lineBetween(lx, by + pad, lx, by + bh - pad);
     }
 
-    // Heart icon (drawn at origin, positioned via setPosition)
-    const iconCx = HP_ICON_RADIUS + 4;
+    // Heart icon
+    const iconCx = HP_ICON_RADIUS + 4 * S;
     const iconCy = by + bh / 2;
     this.heartIcon.clear();
     this.drawHeartIcon(this.heartIcon, 0, 0, HP_ICON_RADIUS);
@@ -263,20 +264,20 @@ export class UIManager {
 
     const colors = this.getHpColors(displayRatio);
 
-    // Dark base (like character body bottom color)
+    // Dark base
     g.fillStyle(colors.dark, 1);
     g.fillRoundedRect(fx, fy, fillW, innerH, corners);
 
-    // Main fill top half (like character body top color)
+    // Main fill top half
     g.fillStyle(colors.fill, 1);
     g.fillRoundedRect(fx, fy, fillW, innerH * 0.6, cornersTop);
 
-    // Shine highlight (like heart/coin shine circle)
+    // Shine highlight
     g.fillStyle(colors.shine, 0.5);
-    g.fillRoundedRect(fx + 2, fy + 1, Math.max(0, fillW - 4), innerH * 0.3, cornersTop);
+    g.fillRoundedRect(fx + 2 * S, fy + 1 * S, Math.max(0, fillW - 4 * S), innerH * 0.3, cornersTop);
 
-    // Outline around fill (like character/heart outline)
-    g.lineStyle(2, colors.outline, 1);
+    // Outline around fill
+    g.lineStyle(2 * S, colors.outline, 1);
     g.strokeRoundedRect(fx, fy, fillW, innerH, corners);
   }
 

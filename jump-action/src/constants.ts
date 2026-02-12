@@ -1,10 +1,15 @@
+// ── Render quality scale ──
+// Multiplies internal resolution for sharper visuals on HiDPI displays.
+// All pixel-dimension and velocity constants scale by S; time / ratio / color constants stay unchanged.
+export const S = 2;
+
 // Game dimensions
-export const GAME_WIDTH = 800;
-export const GAME_HEIGHT = 400;
+export const GAME_WIDTH = 800 * S;
+export const GAME_HEIGHT = 400 * S;
 
 // Physics
-export const GRAVITY = 1200;
-export const JUMP_VELOCITY = -450;
+export const GRAVITY = 1200 * S;
+export const JUMP_VELOCITY = -450 * S;
 export const MAX_JUMPS = 2;
 
 // Jump feel
@@ -14,49 +19,49 @@ export const LOW_JUMP_GRAVITY_MULT = 3;
 export const FALL_GRAVITY_MULT = 1.5;
 
 // Player
-export const PLAYER_X = 100;
-export const PLAYER_SIZE = 40;
-export const PLAYER_TEX_HEIGHT = 56; // 3px top pad + body(40) + legs(13)
+export const PLAYER_X = 100 * S;
+export const PLAYER_SIZE = 40 * S;
+export const PLAYER_TEX_HEIGHT = 56 * S;
 
 // Ground
-export const GROUND_HEIGHT = 40;
+export const GROUND_HEIGHT = 40 * S;
 export const GROUND_Y = GAME_HEIGHT - GROUND_HEIGHT / 2;
 
 // Ground segments (scrolling)
-export const GROUND_TILE_WIDTH = 200;
+export const GROUND_TILE_WIDTH = 200 * S;
 export const GROUND_SEGMENT_MIN = 2;
 export const GROUND_SEGMENT_MAX = 4;
-export const GAP_WIDTH_MIN = 100;
-export const GAP_WIDTH_MAX = 150;
+export const GAP_WIDTH_MIN = 100 * S;
+export const GAP_WIDTH_MAX = 150 * S;
 export const GAP_PROBABILITY = 0.3;
-export const SCROLL_SPEED_INITIAL = -250;
-export const SCROLL_SPEED_MAX = -500;
-export const SCROLL_SPEED_INCREMENT = -10;
+export const SCROLL_SPEED_INITIAL = -250 * S;
+export const SCROLL_SPEED_MAX = -500 * S;
+export const SCROLL_SPEED_INCREMENT = -10 * S;
 
 // Coins
-export const COIN_SIZE = 20;
+export const COIN_SIZE = 20 * S;
 export const COIN_SCORE = 1;
-export const COIN_LINE_SPACING = 40;
+export const COIN_LINE_SPACING = 40 * S;
 export const COIN_ARC_COUNT = 5;
-export const COIN_GROUND_Y_OFFSET = -30;
-export const COIN_HIGH_Y = 220;
+export const COIN_GROUND_Y_OFFSET = -30 * S;
+export const COIN_HIGH_Y = 220 * S;
 export const COLOR_COIN = 0xf1c40f;
 
 // Quiz
-export const QUIZ_INTERVAL_MS = 8000;    // 8초마다 퀴즈
+export const QUIZ_INTERVAL_MS = 8000;
 export const QUIZ_ANNOUNCE_MS = 3000;
 export const QUIZ_WINDOW_MS = 5000;
 export const QUIZ_RESULT_MS = 1000;
-export const QUIZ_ITEM_SIZE = 44;
-export const QUIZ_WORD_WIDTH = 90;
-export const QUIZ_WORD_HEIGHT = 40;
-export const QUIZ_ITEM_HIGH_Y = 200;
-export const QUIZ_ITEM_SPACING_X = 200;
+export const QUIZ_ITEM_SIZE = 44 * S;
+export const QUIZ_WORD_WIDTH = 90 * S;
+export const QUIZ_WORD_HEIGHT = 40 * S;
+export const QUIZ_ITEM_HIGH_Y = 200 * S;
+export const QUIZ_ITEM_SPACING_X = 200 * S;
 export const COLOR_QUIZ_WORD = 0x3498db;
 
 // Buff / Debuff (stack-based: multiplier = base ^ stacks)
-export const SPEED_STACK_BASE = 1.15;    // 스택당 15%
-export const JUMP_STACK_BASE = 1.15;     // 스택당 15%
+export const SPEED_STACK_BASE = 1.15;
+export const JUMP_STACK_BASE = 1.15;
 export const SPEED_MULT_MIN = 0.4;
 export const SPEED_MULT_MAX = 2.5;
 export const JUMP_MULT_MIN = 0.4;
@@ -67,18 +72,18 @@ export const SCORE_BONUS = 30;
 export const EFFECT_DISPLAY_MS = 1500;
 
 // HP gauge (Cookie Run style)
-export const HP_MAX = 90000;  // 90초
-export const HP_ICON_RADIUS = 14;
-export const HP_BAR_X = 36;
-export const HP_BAR_Y = 8;
-export const HP_BAR_WIDTH = 600;
-export const HP_BAR_HEIGHT = 26;
-export const HP_BAR_RADIUS = 13;
-export const HP_BAR_PADDING = 3;
+export const HP_MAX = 90000;
+export const HP_ICON_RADIUS = 14 * S;
+export const HP_BAR_X = 36 * S;
+export const HP_BAR_Y = 8 * S;
+export const HP_BAR_WIDTH = 600 * S;
+export const HP_BAR_HEIGHT = 26 * S;
+export const HP_BAR_RADIUS = 13 * S;
+export const HP_BAR_PADDING = 3 * S;
 export const COLOR_HP_HEART = 0xe74c3c;
 export const COLOR_HP_HEART_SHINE = 0xf1948a;
 
-// HP gauge visual (matches heart/character style: fill + gradient + outline + shine)
+// HP gauge visual
 export const HP_FRAME_BG = 0x1a1a2e;
 export const HP_FRAME_OUTLINE = 0x3d3d5c;
 export const HP_COLORS = {
@@ -87,15 +92,15 @@ export const HP_COLORS = {
   low:  { fill: 0xe74c3c, dark: 0xc0392b, outline: 0x922b21, shine: 0xec7063 },
 };
 export const HP_SEGMENT_COLOR = 0x3d3d5c;
-export const HP_MAX_BOOST = 5000;          // 최대 체력 +5초
-export const HP_RESTORE_AMOUNT = 8000;     // 현재 체력 +8초
-export const HP_DECAY_STACK_BASE = 1.15;   // 감소 속도 스택당 15%
+export const HP_MAX_BOOST = 5000;
+export const HP_RESTORE_AMOUNT = 8000;
+export const HP_DECAY_STACK_BASE = 1.15;
 export const HP_DECAY_MULT_MIN = 0.4;
 export const HP_DECAY_MULT_MAX = 2.5;
-export const HP_MAX_MIN = 15000;           // 최대 체력 하한 (15초)
+export const HP_MAX_MIN = 15000;
 
 // Fall death
-export const FALL_DEATH_Y = GAME_HEIGHT + 50;
+export const FALL_DEATH_Y = GAME_HEIGHT + 50 * S;
 
 // Game Over
 export const HIT_FREEZE_DURATION = 800;
@@ -170,9 +175,9 @@ export const SKY_BOT_COLOR = { r: 0xf5, g: 0xe6, b: 0xca };
 // ── Distance-based sky tinting ──
 export const SKY_TINT_STAGES = [
   { dist: 0, color: 0xffffff },
-  { dist: 2000, color: 0xfff8e8 },
-  { dist: 5000, color: 0xffe0b0 },
-  { dist: 10000, color: 0xffb070 },
+  { dist: 2000 * S, color: 0xfff8e8 },
+  { dist: 5000 * S, color: 0xffe0b0 },
+  { dist: 10000 * S, color: 0xffb070 },
 ];
 
 // ── HP gauge animation ──
@@ -183,7 +188,7 @@ export const HP_DAMAGE_FLASH_MS = 100;
 
 // ── Score popup ──
 export const SCORE_POPUP_DURATION = 600;
-export const SCORE_POPUP_RISE = 30;
+export const SCORE_POPUP_RISE = 30 * S;
 export const SCORE_BOUNCE_SCALE = 1.3;
 export const SCORE_BOUNCE_DURATION = 200;
 export const SCORE_LERP_SPEED = 200;

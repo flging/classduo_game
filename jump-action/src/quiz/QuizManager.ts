@@ -3,6 +3,7 @@ import { QuizItem } from "../entities/QuizItem";
 import { QuizQuestion, ChoiceType } from "./quizTypes";
 import { QUIZ_QUESTIONS } from "./quizData";
 import {
+  S,
   GAME_WIDTH,
   GAME_HEIGHT,
   GROUND_Y,
@@ -108,13 +109,13 @@ export class QuizManager {
     this.callbacks.onQuizAnnounce?.();
 
     this.bannerText = this.scene.add
-      .text(GAME_WIDTH / 2, -30, `먹으세요: ${question.correctAnswer}`, {
+      .text(GAME_WIDTH / 2, -30 * S, `먹으세요: ${question.correctAnswer}`, {
         fontFamily: "monospace",
-        fontSize: "22px",
+        fontSize: `${22 * S}px`,
         color: "#ffffff",
         backgroundColor: "#1a1a2e",
-        padding: { x: 16, y: 8 },
-        shadow: { offsetX: 1, offsetY: 1, color: "#000000", blur: 4, fill: true },
+        padding: { x: 16 * S, y: 8 * S },
+        shadow: { offsetX: 1 * S, offsetY: 1 * S, color: "#000000", blur: 4 * S, fill: true },
       })
       .setOrigin(0.5)
       .setDepth(10);
@@ -122,7 +123,7 @@ export class QuizManager {
     // Slide-in from top
     this.scene.tweens.add({
       targets: this.bannerText,
-      y: 50,
+      y: 50 * S,
       duration: 300,
       ease: "Back.Out",
     });
@@ -134,7 +135,7 @@ export class QuizManager {
 
     // Generate random Y positions for each item
     const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
-    const lowY = groundTop - QUIZ_ITEM_SIZE / 2 - 5;
+    const lowY = groundTop - QUIZ_ITEM_SIZE / 2 - 5 * S;
     this.itemYPositions = allWords.map(
       () => Phaser.Math.Between(QUIZ_ITEM_HIGH_Y, lowY)
     );
@@ -199,7 +200,7 @@ export class QuizManager {
 
   private spawnQuizItems(words: string[], correctAnswer: string): void {
     const speed = this.callbacks.getScrollSpeed();
-    const startX = GAME_WIDTH + 50;
+    const startX = GAME_WIDTH + 50 * S;
 
     words.forEach((word, i) => {
       const y = this.itemYPositions[i];
@@ -229,9 +230,9 @@ export class QuizManager {
     this.callbacks.setGameState("quiz_result");
 
     this.resultText = this.scene.add
-      .text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40, text, {
+      .text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40 * S, text, {
         fontFamily: "monospace",
-        fontSize: "36px",
+        fontSize: `${36 * S}px`,
         color: color,
         fontStyle: "bold",
       })
@@ -263,9 +264,9 @@ export class QuizManager {
     this.scene.physics.pause();
 
     const selected = this.pickCards();
-    const cardW = 150;
-    const cardH = 180;
-    const gap = 24;
+    const cardW = 150 * S;
+    const cardH = 180 * S;
+    const gap = 24 * S;
     const totalW = cardW * 3 + gap * 2;
     const startX = (GAME_WIDTH - totalW) / 2;
     const cardY = (GAME_HEIGHT - cardH) / 2;
@@ -279,9 +280,9 @@ export class QuizManager {
 
     // Title
     const title = this.scene.add
-      .text(GAME_WIDTH / 2, cardY - 30, "보상을 선택하세요!", {
+      .text(GAME_WIDTH / 2, cardY - 30 * S, "보상을 선택하세요!", {
         fontFamily: "monospace",
-        fontSize: "20px",
+        fontSize: `${20 * S}px`,
         color: "#ffffff",
         fontStyle: "bold",
       })
@@ -309,7 +310,7 @@ export class QuizManager {
       const bg = this.scene.add.graphics();
       const hx = -cardW / 2;
       const hy = -cardH / 2;
-      const r = 12;
+      const r = 12 * S;
 
       // Dark base (bottom gradient)
       bg.fillStyle(darken(card.color, 25), 1);
@@ -321,34 +322,34 @@ export class QuizManager {
 
       // Shine highlight (top strip)
       bg.fillStyle(lighten(card.color, 30), 0.3);
-      bg.fillRoundedRect(hx + 3, hy + 2, cardW - 6, cardH * 0.2, { tl: r, tr: r, bl: 0, br: 0 });
+      bg.fillRoundedRect(hx + 3 * S, hy + 2 * S, cardW - 6 * S, cardH * 0.2, { tl: r, tr: r, bl: 0, br: 0 });
 
       // Outline (darker shade, 2px like character/heart)
-      bg.lineStyle(2, darken(card.color, 50), 1);
+      bg.lineStyle(2 * S, darken(card.color, 50), 1);
       bg.strokeRoundedRect(hx, hy, cardW, cardH, r);
       container.add(bg);
 
       // Title
       const cardTitle = this.scene.add
-        .text(0, -25, card.title, {
+        .text(0, -25 * S, card.title, {
           fontFamily: "monospace",
-          fontSize: "18px",
+          fontSize: `${18 * S}px`,
           color: "#ffffff",
           fontStyle: "bold",
           stroke: "#000000",
-          strokeThickness: 3,
+          strokeThickness: 3 * S,
         })
         .setOrigin(0.5);
       container.add(cardTitle);
 
       // Description
       const cardDesc = this.scene.add
-        .text(0, 20, card.desc, {
+        .text(0, 20 * S, card.desc, {
           fontFamily: "monospace",
-          fontSize: "12px",
+          fontSize: `${12 * S}px`,
           color: "#ffffff",
           stroke: "#000000",
-          strokeThickness: 2,
+          strokeThickness: 2 * S,
         })
         .setOrigin(0.5);
       container.add(cardDesc);
@@ -470,7 +471,7 @@ export class QuizManager {
     g.fillPath();
 
     // Dark outline
-    g.lineStyle(2, 0x922b21, 1);
+    g.lineStyle(2 * S, 0x922b21, 1);
     g.beginPath();
     g.moveTo(cx, top);
     g.lineTo(cx + half, bot);
@@ -481,10 +482,10 @@ export class QuizManager {
     // White exclamation mark (line + dot)
     const exTop = cy - size * 0.25;
     const exBot = cy + size * 0.1;
-    g.lineStyle(3, 0xffffff, 1);
+    g.lineStyle(3 * S, 0xffffff, 1);
     g.lineBetween(cx, exTop, cx, exBot);
     g.fillStyle(0xffffff, 1);
-    g.fillCircle(cx, cy + size * 0.28, 2);
+    g.fillCircle(cx, cy + size * 0.28, 2 * S);
   }
 
   private spawnPreviewMarkers(words: string[]): void {
@@ -500,24 +501,24 @@ export class QuizManager {
       const text = this.scene.add
         .text(0, 0, word, {
           fontFamily: "monospace",
-          fontSize: "15px",
+          fontSize: `${15 * S}px`,
           color: "#ffffff",
           fontStyle: "bold",
           stroke: "#000000",
-          strokeThickness: 3,
+          strokeThickness: 3 * S,
         })
         .setOrigin(0.5);
       container.add(text);
 
       const halfTextW = text.width / 2;
-      const triS = 18;
-      const gap = 6;
+      const triS = 18 * S;
+      const triGap = 6 * S;
 
       const icons = this.scene.add.graphics();
       // Left warning triangle + exclamation
-      this.drawWarningIcon(icons, -(halfTextW + gap + triS * 0.5), 0, triS);
+      this.drawWarningIcon(icons, -(halfTextW + triGap + triS * 0.5), 0, triS);
       // Right warning triangle + exclamation
-      this.drawWarningIcon(icons, halfTextW + gap + triS * 0.5, 0, triS);
+      this.drawWarningIcon(icons, halfTextW + triGap + triS * 0.5, 0, triS);
       container.add(icons);
 
       this.scene.tweens.add({

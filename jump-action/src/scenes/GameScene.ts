@@ -9,6 +9,7 @@ import { ParticleManager } from "../systems/ParticleManager";
 import { CameraManager } from "../systems/CameraManager";
 import { UIManager } from "../systems/UIManager";
 import {
+  S,
   GAME_WIDTH,
   GAME_HEIGHT,
   PLAYER_X,
@@ -159,11 +160,11 @@ export class GameScene extends Phaser.Scene {
 
   private createPlayer(): void {
     const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
-    const bodyBottomFromCenter = -PLAYER_TEX_HEIGHT / 2 + 5 + 38;
+    const bodyBottomFromCenter = -PLAYER_TEX_HEIGHT / 2 + (5 + 38) * S;
     const playerY = groundTop - bodyBottomFromCenter;
 
     // Start offscreen for run-in effect
-    this.player = new Player(this, -50, playerY);
+    this.player = new Player(this, -50 * S, playerY);
     this.tweens.add({
       targets: this.player,
       x: PLAYER_X,
@@ -341,8 +342,8 @@ export class GameScene extends Phaser.Scene {
     for (let i = 0; i < COIN_ARC_COUNT; i++) {
       const t = i / (COIN_ARC_COUNT - 1);
       const x = gapStartX + gapWidth * t;
-      const arcHeight = 120;
-      const y = groundTop - 30 - arcHeight * 4 * t * (1 - t);
+      const arcHeight = 120 * S;
+      const y = groundTop - 30 * S - arcHeight * 4 * t * (1 - t);
       const coin = new Coin(this, x, y);
       this.coins.add(coin);
       coin.setScrollSpeed(speed);
@@ -366,7 +367,7 @@ export class GameScene extends Phaser.Scene {
 
     // Coin burst particles + popup
     this.particles.spawnCoinBurst(cx, cy);
-    this.particles.spawnScorePopup(cx, cy - 10, "+1", "#f1c40f");
+    this.particles.spawnScorePopup(cx, cy - 10 * S, "+1", "#f1c40f");
 
     // Speed increase
     if (this.totalCoinsCollected % SPEED_UP_COIN_INTERVAL === 0) {
@@ -518,7 +519,7 @@ export class GameScene extends Phaser.Scene {
     if (this.player.isDucking && playerBody.blocked.down) {
       if (time - this.lastSlideDustTime > 50) {
         this.lastSlideDustTime = time;
-        this.particles.spawnSlideDust(this.player.x + 25);
+        this.particles.spawnSlideDust(this.player.x + 25 * S);
       }
     }
 
@@ -583,7 +584,7 @@ export class GameScene extends Phaser.Scene {
       this.tweens.add({
         targets: this.player,
         angle: 90,
-        y: this.player.y + 10,
+        y: this.player.y + 10 * S,
         duration: 500,
         ease: "Power2",
         onComplete: () => {

@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import {
+  S,
   GAME_WIDTH,
   GAME_HEIGHT,
   GROUND_Y,
@@ -37,7 +38,7 @@ export class CameraManager {
       .setDepth(DEPTH_SKY_TINT);
 
     // Mountain layers at different heights
-    const mountainPeakH = 120;
+    const mountainPeakH = 120 * S;
     const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
     const mountainTop = groundTop - mountainPeakH;
     const mountainSpriteH = GAME_HEIGHT - mountainTop;
@@ -48,12 +49,12 @@ export class CameraManager {
       .setDepth(DEPTH_PARALLAX_FAR);
 
     this.mountainMid = this.scene.add
-      .tileSprite(0, mountainTop + 20, GAME_WIDTH, mountainSpriteH, "mountains_mid")
+      .tileSprite(0, mountainTop + 20 * S, GAME_WIDTH, mountainSpriteH, "mountains_mid")
       .setOrigin(0, 0)
       .setDepth(DEPTH_PARALLAX_MID);
 
     this.mountainNear = this.scene.add
-      .tileSprite(0, mountainTop + 40, GAME_WIDTH, mountainSpriteH, "mountains_near")
+      .tileSprite(0, mountainTop + 40 * S, GAME_WIDTH, mountainSpriteH, "mountains_near")
       .setOrigin(0, 0)
       .setDepth(DEPTH_PARALLAX_NEAR);
   }

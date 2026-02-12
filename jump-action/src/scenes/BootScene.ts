@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import {
+  S,
   GAME_WIDTH,
   GAME_HEIGHT,
   PLAYER_SIZE,
@@ -74,14 +75,14 @@ export class BootScene extends Phaser.Scene {
     topPad: number,
     eyeStyle: "normal" | "squint" | "dead" | "open" = "normal"
   ): void {
-    const bodyX = 4;
+    const bodyX = 4 * S;
     const bodyY = topPad;
-    const bodyW = 32;
-    const bodyH = 38;
-    const tlr = 14;
-    const trr = 14;
-    const blr = 4;
-    const brr = 4;
+    const bodyW = 32 * S;
+    const bodyH = 38 * S;
+    const tlr = 14 * S;
+    const trr = 14 * S;
+    const blr = 4 * S;
+    const brr = 4 * S;
 
     // Body gradient (top lighter, bottom darker)
     const topColor = { r: 0xd0, g: 0x44, b: 0x35 };
@@ -127,14 +128,14 @@ export class BootScene extends Phaser.Scene {
       }
     }
 
-    // Hood edge shadow (dark arc at top)
-    g.lineStyle(2, 0x7a1a12, 0.5);
+    // Hood edge shadow (dark arc at top, kept inside body)
+    g.lineStyle(2 * S, 0x7a1a12, 0.5);
     g.beginPath();
-    g.arc(cx + 2, bodyY + tlr, tlr + 2, -Math.PI * 0.8, -Math.PI * 0.2, false);
+    g.arc(cx + 2 * S, bodyY + tlr, tlr - 2 * S, -Math.PI * 0.75, -Math.PI * 0.25, false);
     g.strokePath();
 
     // Outline
-    g.lineStyle(2, 0x922b21);
+    g.lineStyle(2 * S, 0x922b21);
     g.beginPath();
     g.moveTo(bodyX + tlr, bodyY);
     g.lineTo(bodyX + bodyW - trr, bodyY);
@@ -149,82 +150,82 @@ export class BootScene extends Phaser.Scene {
     g.strokePath();
 
     // Pocket line
-    g.lineStyle(1, 0x922b21, 0.5);
-    g.lineBetween(bodyX + 6, bodyY + 30, bodyX + bodyW - 6, bodyY + 30);
+    g.lineStyle(1 * S, 0x922b21, 0.5);
+    g.lineBetween(bodyX + 6 * S, bodyY + 30 * S, bodyX + bodyW - 6 * S, bodyY + 30 * S);
 
     // Center seam (zipper line)
-    const seamX = cx + 7;
-    const seamTop = bodyY + 24;
-    const seamBot = bodyY + bodyH - 2;
-    g.lineStyle(2, 0x922b21);
+    const seamX = cx + 7 * S;
+    const seamTop = bodyY + 24 * S;
+    const seamBot = bodyY + bodyH - 2 * S;
+    g.lineStyle(2 * S, 0x922b21);
     g.lineBetween(seamX, seamTop, seamX, seamBot);
 
     // "K" on right chest
-    const kx = seamX + 3;
-    const ky = bodyY + 24;
-    const kh = 6;
-    g.lineStyle(1.2, 0xffffff);
+    const kx = seamX + 3 * S;
+    const ky = bodyY + 24 * S;
+    const kh = 6 * S;
+    g.lineStyle(1.2 * S, 0xffffff);
     g.lineBetween(kx, ky, kx, ky + kh);
-    g.lineBetween(kx + 4, ky, kx, ky + kh * 0.45);
-    g.lineBetween(kx, ky + kh * 0.45, kx + 4, ky + kh);
+    g.lineBetween(kx + 4 * S, ky, kx, ky + kh * 0.45);
+    g.lineBetween(kx, ky + kh * 0.45, kx + 4 * S, ky + kh);
 
     // Face (white oval)
-    const faceCx = cx + 2;
-    const faceCy = topPad + 14;
-    const faceRx = 11;
-    const faceRy = 10;
+    const faceCx = cx + 2 * S;
+    const faceCy = topPad + 14 * S;
+    const faceRx = 11 * S;
+    const faceRy = 10 * S;
     g.fillStyle(0xffffff);
     g.fillEllipse(faceCx, faceCy, faceRx * 2, faceRy * 2);
 
     // Eyes
-    const eyeY = topPad + 13;
+    const eyeY = topPad + 13 * S;
     if (eyeStyle === "squint") {
-      const es = 3;
-      g.lineStyle(1.8, 0x222222);
-      const lx = cx + 3;
+      const es = 3 * S;
+      g.lineStyle(1.8 * S, 0x222222);
+      const lx = cx + 3 * S;
       g.lineBetween(lx - es, eyeY - es, lx + es, eyeY);
       g.lineBetween(lx + es, eyeY, lx - es, eyeY + es);
-      const rx = cx + 11;
+      const rx = cx + 11 * S;
       g.lineBetween(rx + es, eyeY - es, rx - es, eyeY);
       g.lineBetween(rx - es, eyeY, rx + es, eyeY + es);
     } else if (eyeStyle === "dead") {
-      const es = 2.5;
-      g.lineStyle(1.8, 0x222222);
-      const lx = cx + 4;
+      const es = 2.5 * S;
+      g.lineStyle(1.8 * S, 0x222222);
+      const lx = cx + 4 * S;
       g.lineBetween(lx - es, eyeY - es, lx + es, eyeY + es);
       g.lineBetween(lx + es, eyeY - es, lx - es, eyeY + es);
-      const rx = cx + 11;
+      const rx = cx + 11 * S;
       g.lineBetween(rx - es, eyeY - es, rx + es, eyeY + es);
       g.lineBetween(rx + es, eyeY - es, rx - es, eyeY + es);
     } else if (eyeStyle === "open") {
       // Surprised "o" mouth eyes
       g.fillStyle(0xffffff);
-      g.fillCircle(cx + 2, eyeY, 5);
-      g.fillCircle(cx + 10, eyeY, 4);
+      g.fillCircle(cx + 2 * S, eyeY, 5 * S);
+      g.fillCircle(cx + 10 * S, eyeY, 4 * S);
       g.fillStyle(0x222222);
-      g.fillCircle(cx + 4, eyeY - 1, 2.5);
-      g.fillCircle(cx + 11, eyeY - 1, 2);
+      g.fillCircle(cx + 4 * S, eyeY - 1 * S, 2.5 * S);
+      g.fillCircle(cx + 11 * S, eyeY - 1 * S, 2 * S);
       // White highlight dots
       g.fillStyle(0xffffff);
-      g.fillCircle(cx + 3, eyeY - 2, 1);
-      g.fillCircle(cx + 10, eyeY - 2, 0.8);
+      g.fillCircle(cx + 3 * S, eyeY - 2 * S, 1 * S);
+      g.fillCircle(cx + 10 * S, eyeY - 2 * S, 0.8 * S);
     } else {
       g.fillStyle(0xffffff);
-      g.fillCircle(cx + 2, eyeY, 5);
-      g.fillCircle(cx + 10, eyeY, 4);
+      g.fillCircle(cx + 2 * S, eyeY, 5 * S);
+      g.fillCircle(cx + 10 * S, eyeY, 4 * S);
       g.fillStyle(0x222222);
-      g.fillCircle(cx + 4, eyeY, 2.5);
-      g.fillCircle(cx + 11, eyeY, 2);
+      g.fillCircle(cx + 4 * S, eyeY, 2.5 * S);
+      g.fillCircle(cx + 11 * S, eyeY, 2 * S);
       // White highlight dots
       g.fillStyle(0xffffff);
-      g.fillCircle(cx + 3, eyeY - 1, 1);
-      g.fillCircle(cx + 10, eyeY - 1, 0.8);
+      g.fillCircle(cx + 3 * S, eyeY - 1 * S, 1 * S);
+      g.fillCircle(cx + 10 * S, eyeY - 1 * S, 0.8 * S);
     }
 
     // Blush
     g.fillStyle(0xffaaaa, 0.5);
-    g.fillCircle(faceCx - faceRx * 0.6, faceCy + faceRy * 0.5, 2.5);
-    g.fillCircle(faceCx + faceRx * 0.65, faceCy + faceRy * 0.5, 2.5);
+    g.fillCircle(faceCx - faceRx * 0.6, faceCy + faceRy * 0.5, 2.5 * S);
+    g.fillCircle(faceCx + faceRx * 0.65, faceCy + faceRy * 0.5, 2.5 * S);
   }
 
   private drawLeg(
@@ -242,38 +243,34 @@ export class BootScene extends Phaser.Scene {
     g.fillStyle(0x922b21);
     g.fillRoundedRect(x, y + h - shoeH, w, shoeH, { tl: 0, tr: 0, bl: r, br: r });
     // Shoe laces
-    g.lineStyle(0.8, 0xffffff, 0.6);
-    g.lineBetween(x + 1, y + h - shoeH + 1, x + w - 1, y + h - shoeH + 1);
-    if (shoeH > 2) {
-      g.lineBetween(x + 1, y + h - shoeH + 3, x + w - 1, y + h - shoeH + 3);
+    g.lineStyle(0.8 * S, 0xffffff, 0.6);
+    g.lineBetween(x + 1 * S, y + h - shoeH + 1 * S, x + w - 1 * S, y + h - shoeH + 1 * S);
+    if (shoeH > 2 * S) {
+      g.lineBetween(x + 1 * S, y + h - shoeH + 3 * S, x + w - 1 * S, y + h - shoeH + 3 * S);
     }
     // Outline
-    g.lineStyle(2, 0x922b21);
+    g.lineStyle(2 * S, 0x922b21);
     g.strokeRoundedRect(x, y, w, h, { tl: 0, tr: 0, bl: r, br: r });
   }
 
   // ── Character shadow ──
   private drawShadow(g: Phaser.GameObjects.Graphics, cx: number, bottomY: number): void {
     g.fillStyle(0x000000, 0.15);
-    g.fillEllipse(cx, bottomY + 2, 26, 6);
+    g.fillEllipse(cx, bottomY + 2 * S, 26 * S, 6 * S);
   }
 
   private createPlayerTexture(): void {
     const w = PLAYER_SIZE;
     const h = PLAYER_TEX_HEIGHT;
-    const topPad = 3;
-    const legR = 3;
+    const topPad = 3 * S;
+    const legR = 3 * S;
 
     // --- Run frames (4 frames, exaggerated leg movement) ---
     const legConfigs = [
-      // frame 0: left extended far, right tucked
-      { leftY: 36, leftH: 14, rightY: 42, rightH: 8 },
-      // frame 1: both mid (passing)
-      { leftY: 39, leftH: 11, rightY: 39, rightH: 11 },
-      // frame 2: right extended far, left tucked
-      { leftY: 42, leftH: 8, rightY: 36, rightH: 14 },
-      // frame 3: both mid (passing back)
-      { leftY: 39, leftH: 11, rightY: 39, rightH: 11 },
+      { leftY: 36 * S, leftH: 14 * S, rightY: 42 * S, rightH: 8 * S },
+      { leftY: 39 * S, leftH: 11 * S, rightY: 39 * S, rightH: 11 * S },
+      { leftY: 42 * S, leftH: 8 * S, rightY: 36 * S, rightH: 14 * S },
+      { leftY: 39 * S, leftH: 11 * S, rightY: 39 * S, rightH: 11 * S },
     ];
 
     for (let frame = 0; frame < 4; frame++) {
@@ -281,10 +278,10 @@ export class BootScene extends Phaser.Scene {
       const cx = w / 2;
       this.drawHoodieBody(g, cx, topPad);
 
-      const leftX = cx - 6;
-      const rightX = cx + 1;
-      const legW = 7;
-      const shoeH = 3;
+      const leftX = cx - 6 * S;
+      const rightX = cx + 1 * S;
+      const legW = 7 * S;
+      const shoeH = 3 * S;
       const cfg = legConfigs[frame];
 
       this.drawLeg(g, leftX, topPad + cfg.leftY, legW, cfg.leftH, shoeH, legR);
@@ -295,52 +292,52 @@ export class BootScene extends Phaser.Scene {
       g.destroy();
     }
 
-    // --- Jump frame (>< eyes, "open" face on first jump) ---
+    // --- Jump frame ---
     {
       const g = this.add.graphics();
       const cx = w / 2;
       this.drawHoodieBody(g, cx, topPad, "squint");
 
-      const leftX = cx - 6;
-      const rightX = cx + 1;
-      const legW = 7;
-      const shoeH = 3;
-      this.drawLeg(g, leftX, topPad + 38, legW, 12, shoeH, legR);
-      this.drawLeg(g, rightX, topPad + 40, legW, 10, shoeH, legR);
+      const leftX = cx - 6 * S;
+      const rightX = cx + 1 * S;
+      const legW = 7 * S;
+      const shoeH = 3 * S;
+      this.drawLeg(g, leftX, topPad + 38 * S, legW, 12 * S, shoeH, legR);
+      this.drawLeg(g, rightX, topPad + 40 * S, legW, 10 * S, shoeH, legR);
 
       g.generateTexture("player_jump", w, h);
       g.destroy();
     }
 
-    // --- Fall frame (legs spread, "open" mouth) ---
+    // --- Fall frame ---
     {
       const g = this.add.graphics();
       const cx = w / 2;
       this.drawHoodieBody(g, cx, topPad, "open");
 
-      const leftX = cx - 8;
-      const rightX = cx + 3;
-      const legW = 7;
-      const shoeH = 3;
-      this.drawLeg(g, leftX, topPad + 38, legW, 13, shoeH, legR);
-      this.drawLeg(g, rightX, topPad + 38, legW, 13, shoeH, legR);
+      const leftX = cx - 8 * S;
+      const rightX = cx + 3 * S;
+      const legW = 7 * S;
+      const shoeH = 3 * S;
+      this.drawLeg(g, leftX, topPad + 38 * S, legW, 13 * S, shoeH, legR);
+      this.drawLeg(g, rightX, topPad + 38 * S, legW, 13 * S, shoeH, legR);
 
       g.generateTexture("player_fall", w, h);
       g.destroy();
     }
 
-    // --- Spin frame (tucked short legs) ---
+    // --- Spin frame ---
     {
       const g = this.add.graphics();
       const cx = w / 2;
       this.drawHoodieBody(g, cx, topPad, "squint");
 
-      const leftX = cx - 6;
-      const rightX = cx + 1;
-      const legW = 7;
-      const shoeH = 2;
-      const tuckY = topPad + 39;
-      const tuckH = 7;
+      const leftX = cx - 6 * S;
+      const rightX = cx + 1 * S;
+      const legW = 7 * S;
+      const shoeH = 2 * S;
+      const tuckY = topPad + 39 * S;
+      const tuckH = 7 * S;
 
       this.drawLeg(g, leftX, tuckY, legW, tuckH, shoeH, legR);
       this.drawLeg(g, rightX, tuckY, legW, tuckH, shoeH, legR);
@@ -349,38 +346,37 @@ export class BootScene extends Phaser.Scene {
       g.destroy();
     }
 
-    // --- Duck frame (uses drawHoodieBody for consistent look, shifted down) ---
+    // --- Duck frame ---
     {
       const g = this.add.graphics();
       const cx = w / 2;
-      const duckTopPad = topPad + 12; // shift body down to look squished
+      const duckTopPad = topPad + 12 * S;
       this.drawHoodieBody(g, cx, duckTopPad, "squint");
 
-      // Short tucked legs
-      const leftX = cx - 6;
-      const rightX = cx + 1;
-      const legW = 7;
-      const shoeH = 2;
-      this.drawLeg(g, leftX, duckTopPad + 38, legW, 6, shoeH, 3);
-      this.drawLeg(g, rightX, duckTopPad + 38, legW, 6, shoeH, 3);
-      this.drawShadow(g, cx, duckTopPad + 44);
+      const leftX = cx - 6 * S;
+      const rightX = cx + 1 * S;
+      const legW = 7 * S;
+      const shoeH = 2 * S;
+      this.drawLeg(g, leftX, duckTopPad + 38 * S, legW, 6 * S, shoeH, 3 * S);
+      this.drawLeg(g, rightX, duckTopPad + 38 * S, legW, 6 * S, shoeH, 3 * S);
+      this.drawShadow(g, cx, duckTopPad + 44 * S);
 
       g.generateTexture("player_duck", w, h);
       g.destroy();
     }
 
-    // --- Dead frame (x x eyes) ---
+    // --- Dead frame ---
     {
       const g = this.add.graphics();
       const cx = w / 2;
       this.drawHoodieBody(g, cx, topPad, "dead");
 
-      const leftX = cx - 6;
-      const rightX = cx + 1;
-      const legW = 7;
-      const shoeH = 3;
-      this.drawLeg(g, leftX, topPad + 38, legW, 12, shoeH, legR);
-      this.drawLeg(g, rightX, topPad + 40, legW, 10, shoeH, legR);
+      const leftX = cx - 6 * S;
+      const rightX = cx + 1 * S;
+      const legW = 7 * S;
+      const shoeH = 3 * S;
+      this.drawLeg(g, leftX, topPad + 38 * S, legW, 12 * S, shoeH, legR);
+      this.drawLeg(g, rightX, topPad + 40 * S, legW, 10 * S, shoeH, legR);
 
       g.generateTexture("player_dead", w, h);
       g.destroy();
@@ -391,15 +387,14 @@ export class BootScene extends Phaser.Scene {
     const w = GROUND_TILE_WIDTH;
     const h = GROUND_HEIGHT;
 
-    // Create two tile variants
     for (let variant = 0; variant < 2; variant++) {
       const g = this.add.graphics();
       const seed = variant * 137;
 
-      // Gradient fill (starts right below grass strip)
+      // Gradient fill
       const topRGB = { r: 0x9b, g: 0x83, b: 0x65 };
       const botRGB = { r: 0x6a, g: 0x55, b: 0x40 };
-      const gradientStart = 6;
+      const gradientStart = 6 * S;
       const gradientRows = h - gradientStart;
       for (let i = 0; i < gradientRows; i++) {
         const t = i / (gradientRows - 1);
@@ -411,33 +406,33 @@ export class BootScene extends Phaser.Scene {
       }
 
       // Dirt texture dots
-      for (let d = 0; d < 30; d++) {
+      for (let d = 0; d < 30 * S; d++) {
         const dx = ((seed + d * 73) % w);
         const dy = gradientStart + ((seed + d * 47) % gradientRows);
         g.fillStyle(0x5a4530, 0.3);
-        g.fillRect(dx, dy, 1, 1);
+        g.fillRect(dx, dy, 1 * S, 1 * S);
       }
 
       // Grass top
       g.fillStyle(COLOR_GROUND_TOP);
-      g.fillRect(0, 0, w, 6);
+      g.fillRect(0, 0, w, 6 * S);
 
       // Grass blades
       const bladeColors = [0x6b8e23, 0x7ba028, 0x5d7a1e];
-      for (let bx = 0; bx < w; bx += Phaser.Math.Between(3, 5)) {
-        const bladeH = Phaser.Math.Between(3, 6);
+      for (let bx = 0; bx < w; bx += Phaser.Math.Between(3 * S, 5 * S)) {
+        const bladeH = Phaser.Math.Between(3 * S, 6 * S);
         const color = bladeColors[(bx + seed) % bladeColors.length];
         g.fillStyle(color);
-        g.fillTriangle(bx, 6, bx + 1, 6 - bladeH, bx + 2, 6);
+        g.fillTriangle(bx, 6 * S, bx + 1 * S, 6 * S - bladeH, bx + 2 * S, 6 * S);
       }
 
       // Top border line
-      g.lineStyle(1, 0x4a6818);
-      g.lineBetween(0, 6, w, 6);
+      g.lineStyle(1 * S, 0x4a6818);
+      g.lineBetween(0, 6 * S, w, 6 * S);
 
       // Tile divider
-      g.lineStyle(1, 0x7a6548);
-      g.lineBetween(w - 1, 6, w - 1, h);
+      g.lineStyle(1 * S, 0x7a6548);
+      g.lineBetween(w - 1 * S, 6 * S, w - 1 * S, h);
 
       const key = variant === 0 ? "groundTile" : "groundTile2";
       g.generateTexture(key, w, h);
@@ -448,15 +443,14 @@ export class BootScene extends Phaser.Scene {
   private createCoinTexture(): void {
     const size = COIN_SIZE;
 
-    // Main coin + 3 spin frames (width variation)
     const widths = [1.0, 0.7, 0.3, 0.7];
     for (let frame = 0; frame < 4; frame++) {
       const g = this.add.graphics();
       const scaleX = widths[frame];
       const cx = size / 2;
       const cy = size / 2;
-      const rx = (size / 2 - 1) * scaleX;
-      const ry = size / 2 - 1;
+      const rx = (size / 2 - 1 * S) * scaleX;
+      const ry = size / 2 - 1 * S;
 
       // Outer
       g.fillStyle(COLOR_COIN);
@@ -466,7 +460,7 @@ export class BootScene extends Phaser.Scene {
       g.fillStyle(0xd4a017, 0.4);
       g.fillEllipse(cx, cy, rx * 1.4, ry * 1.4);
 
-      // Star in center (only if wide enough)
+      // Star in center
       if (scaleX > 0.5) {
         g.fillStyle(0xfff176, 0.8);
         const starR = ry * 0.35;
@@ -487,7 +481,7 @@ export class BootScene extends Phaser.Scene {
       }
 
       // Border
-      g.lineStyle(1.5, 0xd4a017);
+      g.lineStyle(1.5 * S, 0xd4a017);
       g.strokeEllipse(cx, cy, rx * 2, ry * 2);
 
       // Highlight
@@ -497,7 +491,7 @@ export class BootScene extends Phaser.Scene {
       }
 
       // Shadow arc
-      g.lineStyle(1, 0xb8860b, 0.3);
+      g.lineStyle(1 * S, 0xb8860b, 0.3);
       g.beginPath();
       g.arc(cx + rx * 0.1, cy + ry * 0.1, ry * 0.7, 0.3, Math.PI * 0.8, false);
       g.strokePath();
@@ -508,7 +502,7 @@ export class BootScene extends Phaser.Scene {
 
     // Coin glow texture
     {
-      const glowSize = 30;
+      const glowSize = 30 * S;
       const g = this.add.graphics();
       for (let ring = 5; ring > 0; ring--) {
         const t = ring / 5;
@@ -523,8 +517,8 @@ export class BootScene extends Phaser.Scene {
   // ── Mountain textures (3 layers) ──
 
   private createMountainTextures(): void {
-    const w = 800;
-    const h = 160;
+    const w = GAME_WIDTH;
+    const h = 160 * S;
 
     // Far mountains
     {
@@ -532,21 +526,21 @@ export class BootScene extends Phaser.Scene {
       g.fillStyle(COLOR_MOUNTAIN_FAR);
       g.beginPath();
       g.moveTo(0, h);
-      g.lineTo(0, 90);
-      g.lineTo(60, 40);
-      g.lineTo(120, 70);
-      g.lineTo(180, 20);
-      g.lineTo(250, 60);
-      g.lineTo(320, 35);
-      g.lineTo(400, 55);
-      g.lineTo(460, 15);
-      g.lineTo(530, 50);
-      g.lineTo(580, 30);
-      g.lineTo(650, 65);
-      g.lineTo(720, 25);
-      g.lineTo(770, 55);
-      g.lineTo(800, 45);
-      g.lineTo(800, h);
+      g.lineTo(0, 90 * S);
+      g.lineTo(60 * S, 40 * S);
+      g.lineTo(120 * S, 70 * S);
+      g.lineTo(180 * S, 20 * S);
+      g.lineTo(250 * S, 60 * S);
+      g.lineTo(320 * S, 35 * S);
+      g.lineTo(400 * S, 55 * S);
+      g.lineTo(460 * S, 15 * S);
+      g.lineTo(530 * S, 50 * S);
+      g.lineTo(580 * S, 30 * S);
+      g.lineTo(650 * S, 65 * S);
+      g.lineTo(720 * S, 25 * S);
+      g.lineTo(770 * S, 55 * S);
+      g.lineTo(800 * S, 45 * S);
+      g.lineTo(w, h);
       g.closePath();
       g.fillPath();
       g.generateTexture("mountains_far", w, h);
@@ -559,19 +553,19 @@ export class BootScene extends Phaser.Scene {
       g.fillStyle(COLOR_MOUNTAIN_MID);
       g.beginPath();
       g.moveTo(0, h);
-      g.lineTo(0, 80);
-      g.lineTo(80, 35);
-      g.lineTo(150, 65);
-      g.lineTo(220, 25);
-      g.lineTo(300, 55);
-      g.lineTo(380, 20);
-      g.lineTo(450, 50);
-      g.lineTo(520, 30);
-      g.lineTo(600, 60);
-      g.lineTo(680, 28);
-      g.lineTo(750, 50);
-      g.lineTo(800, 40);
-      g.lineTo(800, h);
+      g.lineTo(0, 80 * S);
+      g.lineTo(80 * S, 35 * S);
+      g.lineTo(150 * S, 65 * S);
+      g.lineTo(220 * S, 25 * S);
+      g.lineTo(300 * S, 55 * S);
+      g.lineTo(380 * S, 20 * S);
+      g.lineTo(450 * S, 50 * S);
+      g.lineTo(520 * S, 30 * S);
+      g.lineTo(600 * S, 60 * S);
+      g.lineTo(680 * S, 28 * S);
+      g.lineTo(750 * S, 50 * S);
+      g.lineTo(800 * S, 40 * S);
+      g.lineTo(w, h);
       g.closePath();
       g.fillPath();
       g.generateTexture("mountains_mid", w, h);
@@ -584,18 +578,18 @@ export class BootScene extends Phaser.Scene {
       g.fillStyle(COLOR_MOUNTAIN_NEAR);
       g.beginPath();
       g.moveTo(0, h);
-      g.lineTo(0, 70);
-      g.lineTo(100, 30);
-      g.lineTo(200, 60);
-      g.lineTo(280, 15);
-      g.lineTo(360, 50);
-      g.lineTo(440, 25);
-      g.lineTo(540, 55);
-      g.lineTo(620, 20);
-      g.lineTo(700, 45);
-      g.lineTo(780, 30);
-      g.lineTo(800, 50);
-      g.lineTo(800, h);
+      g.lineTo(0, 70 * S);
+      g.lineTo(100 * S, 30 * S);
+      g.lineTo(200 * S, 60 * S);
+      g.lineTo(280 * S, 15 * S);
+      g.lineTo(360 * S, 50 * S);
+      g.lineTo(440 * S, 25 * S);
+      g.lineTo(540 * S, 55 * S);
+      g.lineTo(620 * S, 20 * S);
+      g.lineTo(700 * S, 45 * S);
+      g.lineTo(780 * S, 30 * S);
+      g.lineTo(800 * S, 50 * S);
+      g.lineTo(w, h);
       g.closePath();
       g.fillPath();
       g.generateTexture("mountains_near", w, h);

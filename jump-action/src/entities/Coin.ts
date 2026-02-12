@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { S } from "../constants";
 
 export class Coin extends Phaser.Physics.Arcade.Sprite {
   private baseY: number;
@@ -24,7 +25,7 @@ export class Coin extends Phaser.Physics.Arcade.Sprite {
     super.preUpdate(time, delta);
 
     // Bob animation (sine wave)
-    this.y = this.baseY + Math.sin(time * 0.003 + this.spawnX * 0.1) * 3;
+    this.y = this.baseY + Math.sin(time * 0.003 + this.spawnX * 0.1) * 3 * S;
 
     // Spin animation (cycle through 4 width frames)
     this.spinTimer += delta;

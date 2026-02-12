@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import {
+  S,
   GRAVITY,
   JUMP_VELOCITY,
   MAX_JUMPS,
@@ -43,8 +44,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Physics body covers only the hoodie body, not the legs
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setSize(30, 38);
-    body.setOffset(5, 5);
+    body.setSize(30 * S, 38 * S);
+    body.setOffset(5 * S, 5 * S);
 
     // Spin ghost trail (rendered behind player)
     this.trail = scene.add.graphics();
@@ -137,7 +138,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     } else {
       // In the air: rising = jump frame, falling = fall frame
       const vy = body.velocity.y;
-      const targetTex = vy > 50 ? "player_fall" : "player_jump";
+      const targetTex = vy > 50 * S ? "player_fall" : "player_jump";
       if (this.isRunning || this.texture.key !== targetTex) {
         this.stop();
         this.setTexture(targetTex);
@@ -147,13 +148,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Ensure body size stays correct after texture swap
     if (this.ducking) {
-      body.setSize(30, 19);
-      body.setOffset(5, 24);
+      body.setSize(30 * S, 19 * S);
+      body.setOffset(5 * S, 24 * S);
       // Tilt only when sliding on ground; flat in air
       this.setAngle(onGround ? -10 : 0);
     } else {
-      body.setSize(30, 38);
-      body.setOffset(5, 5);
+      body.setSize(30 * S, 38 * S);
+      body.setOffset(5 * S, 5 * S);
     }
 
     this.applyVariableGravity(body);
@@ -207,8 +208,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.ducking = true;
     this.squashTween?.stop();
     // Compensate y so body bottom stays at same world position
-    // scaleY 1→0.5 shifts body bottom up by 8.5px
-    this.y += 8.5;
+    this.y += 8.5 * S;
     this.setScale(1.3, 0.5);
   }
 
@@ -216,8 +216,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (!this.ducking) return;
     this.ducking = false;
     // Compensate y so body bottom stays at same world position
-    // scaleY 0.5→1 shifts body bottom down by 8.5px
-    this.y -= 8.5;
+    this.y -= 8.5 * S;
     this.setScale(1, 1);
     this.setAngle(0);
   }
@@ -246,8 +245,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setTexture("player_run0");
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setGravityY(0);
-    body.setSize(30, 38);
-    body.setOffset(5, 5);
+    body.setSize(30 * S, 38 * S);
+    body.setOffset(5 * S, 5 * S);
   }
 
   clearTrail(): void {

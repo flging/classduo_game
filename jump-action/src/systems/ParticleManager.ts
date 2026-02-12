@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import {
+  S,
   PARTICLE_POOL_SIZE,
   COIN_BURST_COUNT,
   QUIZ_BURST_COUNT,
@@ -68,7 +69,7 @@ export class ParticleManager {
     for (let i = 0; i < PARTICLE_POOL_SIZE; i++) {
       this.pool.push({
         x: 0, y: 0, vx: 0, vy: 0,
-        life: 0, maxLife: 1, size: 2, color: 0xffffff, alpha: 1, active: false,
+        life: 0, maxLife: 1, size: 2 * S, color: 0xffffff, alpha: 1, active: false,
       });
     }
 
@@ -83,11 +84,11 @@ export class ParticleManager {
     for (let i = 0; i < AMBIENT_DUST_COUNT; i++) {
       this.ambientDusts.push({
         x: Phaser.Math.Between(0, GAME_WIDTH),
-        y: Phaser.Math.Between(50, GAME_HEIGHT - 80),
+        y: Phaser.Math.Between(50 * S, GAME_HEIGHT - 80 * S),
         baseY: 0,
-        vx: -(Phaser.Math.Between(5, 15)),
+        vx: -(Phaser.Math.Between(5, 15)) * S,
         phase: Math.random() * Math.PI * 2,
-        size: Phaser.Math.FloatBetween(1, 2),
+        size: Phaser.Math.FloatBetween(1 * S, 2 * S),
         alpha: Phaser.Math.FloatBetween(0.15, 0.35),
       });
       this.ambientDusts[i].baseY = this.ambientDusts[i].y;
@@ -115,8 +116,8 @@ export class ParticleManager {
   ): void {
     const {
       color,
-      sizeMin = 2, sizeMax = 4,
-      speedMin = 30, speedMax = 80,
+      sizeMin = 2 * S, sizeMax = 4 * S,
+      speedMin = 30 * S, speedMax = 80 * S,
       lifeMin = 300, lifeMax = 500,
       angle, spread = Math.PI * 2,
       gravity = 0,
@@ -150,8 +151,8 @@ export class ParticleManager {
     const footY = GROUND_Y - GROUND_HEIGHT / 2;
     this.emit(x, footY, 6, {
       color: COLOR_GROUND,
-      sizeMin: 2, sizeMax: 4,
-      speedMin: 20, speedMax: 60,
+      sizeMin: 2 * S, sizeMax: 4 * S,
+      speedMin: 20 * S, speedMax: 60 * S,
       lifeMin: 300, lifeMax: 500,
       angle: -Math.PI / 2, spread: Math.PI * 0.8,
     });
@@ -160,18 +161,18 @@ export class ParticleManager {
   spawnSlideDust(playerRightX: number): void {
     const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
     // Main cloud from right edge
-    this.emit(playerRightX, groundTop - 2, 5, {
+    this.emit(playerRightX, groundTop - 2 * S, 5, {
       color: COLOR_GROUND,
-      sizeMin: 2, sizeMax: 5,
-      speedMin: 40, speedMax: 90,
+      sizeMin: 2 * S, sizeMax: 5 * S,
+      speedMin: 40 * S, speedMax: 90 * S,
       lifeMin: 300, lifeMax: 500,
       angle: Math.PI * 0.85, spread: Math.PI * 0.7,
     });
     // Upward puff
-    this.emit(playerRightX - 3, groundTop - 4, 2, {
+    this.emit(playerRightX - 3 * S, groundTop - 4 * S, 2, {
       color: 0xa89070,
-      sizeMin: 1, sizeMax: 3,
-      speedMin: 15, speedMax: 40,
+      sizeMin: 1 * S, sizeMax: 3 * S,
+      speedMin: 15 * S, speedMax: 40 * S,
       lifeMin: 200, lifeMax: 350,
       angle: -Math.PI / 2, spread: Math.PI * 0.5,
     });
@@ -182,8 +183,8 @@ export class ParticleManager {
     const footY = y + PLAYER_TEX_HEIGHT / 4;
     this.emit(x, footY, 4, {
       color: COLOR_PLAYER,
-      sizeMin: 1, sizeMax: 3,
-      speedMin: 20, speedMax: 50,
+      sizeMin: 1 * S, sizeMax: 3 * S,
+      speedMin: 20 * S, speedMax: 50 * S,
       lifeMin: 250, lifeMax: 400,
       angle: Math.PI / 2, spread: Math.PI * 0.6,
     });
@@ -192,8 +193,8 @@ export class ParticleManager {
   spawnCoinBurst(x: number, y: number): void {
     this.emit(x, y, COIN_BURST_COUNT, {
       color: 0xf1c40f,
-      sizeMin: 2, sizeMax: 4,
-      speedMin: 40, speedMax: 100,
+      sizeMin: 2 * S, sizeMax: 4 * S,
+      speedMin: 40 * S, speedMax: 100 * S,
       lifeMin: 200, lifeMax: 400,
     });
   }
@@ -201,29 +202,28 @@ export class ParticleManager {
   spawnQuizFlash(x: number, y: number): void {
     this.emit(x, y, QUIZ_BURST_COUNT, {
       color: 0xff6b35,
-      sizeMin: 2, sizeMax: 5,
-      speedMin: 50, speedMax: 120,
+      sizeMin: 2 * S, sizeMax: 5 * S,
+      speedMin: 50 * S, speedMax: 120 * S,
       lifeMin: 200, lifeMax: 400,
     });
-    // Expanding ring drawn in update via a separate tween
-    this.spawnExpandRing(x, y, 0xff6b35, 22, 66, 200);
+    this.spawnExpandRing(x, y, 0xff6b35, 22 * S, 66 * S, 200);
   }
 
   spawnDeathExplosion(x: number, y: number): void {
     this.emit(x, y, DEATH_BURST_COUNT, {
       color: COLOR_PLAYER,
-      sizeMin: 2, sizeMax: 5,
-      speedMin: 50, speedMax: 150,
+      sizeMin: 2 * S, sizeMax: 5 * S,
+      speedMin: 50 * S, speedMax: 150 * S,
       lifeMin: 300, lifeMax: 600,
     });
-    this.spawnExpandRing(x, y, 0xffffff, 10, 80, 300);
+    this.spawnExpandRing(x, y, 0xffffff, 10 * S, 80 * S, 300);
   }
 
   spawnWrongCollect(x: number, y: number): void {
     this.emit(x, y, 6, {
       color: 0xe74c3c,
-      sizeMin: 2, sizeMax: 4,
-      speedMin: 30, speedMax: 70,
+      sizeMin: 2 * S, sizeMax: 4 * S,
+      speedMin: 30 * S, speedMax: 70 * S,
       lifeMin: 200, lifeMax: 350,
     });
   }
@@ -245,11 +245,11 @@ export class ParticleManager {
   spawnScorePopup(x: number, y: number, text: string, color: string): void {
     const t = this.scene.add.text(x, y, text, {
       fontFamily: "monospace",
-      fontSize: "14px",
+      fontSize: `${14 * S}px`,
       color: color,
       fontStyle: "bold",
       stroke: "#000000",
-      strokeThickness: 2,
+      strokeThickness: 2 * S,
     }).setOrigin(0.5).setDepth(DEPTH_HUD);
     this.popups.push({ text: t, life: SCORE_POPUP_DURATION, maxLife: SCORE_POPUP_DURATION, startY: y });
   }
@@ -260,11 +260,11 @@ export class ParticleManager {
     for (let i = 0; i < SPEED_LINE_COUNT; i++) {
       for (const sl of this.speedLines) {
         if (!sl.active) {
-          sl.x = GAME_WIDTH + Phaser.Math.Between(0, 100);
-          sl.y = Phaser.Math.Between(30, GAME_HEIGHT - 60);
-          sl.width = Phaser.Math.Between(15, 30);
+          sl.x = GAME_WIDTH + Phaser.Math.Between(0, 100 * S);
+          sl.y = Phaser.Math.Between(30 * S, GAME_HEIGHT - 60 * S);
+          sl.width = Phaser.Math.Between(15 * S, 30 * S);
           sl.alpha = Phaser.Math.FloatBetween(0.15, 0.3);
-          sl.speed = Phaser.Math.Between(600, 1000);
+          sl.speed = Phaser.Math.Between(600 * S, 1000 * S);
           sl.active = true;
           break;
         }
@@ -303,7 +303,7 @@ export class ParticleManager {
       }
       const t = 1 - ring.life / ring.maxLife;
       const r = ring.radius + (ring.maxRadius - ring.radius) * t;
-      this.gfx.lineStyle(2, ring.color, (1 - t) * 0.6);
+      this.gfx.lineStyle(2 * S, ring.color, (1 - t) * 0.6);
       this.gfx.strokeCircle(ring.x, ring.y, r);
     }
 
@@ -316,17 +316,17 @@ export class ParticleManager {
         continue;
       }
       this.gfx.fillStyle(0xffffff, sl.alpha);
-      this.gfx.fillRect(sl.x, sl.y, sl.width, 1);
+      this.gfx.fillRect(sl.x, sl.y, sl.width, 1 * S);
     }
 
     // Update & draw ambient dust
     for (const d of this.ambientDusts) {
       d.x += d.vx * dt;
       d.phase += dt * 1.5;
-      d.y = d.baseY + Math.sin(d.phase) * 8;
-      if (d.x < -10) {
-        d.x = GAME_WIDTH + 10;
-        d.y = Phaser.Math.Between(50, GAME_HEIGHT - 80);
+      d.y = d.baseY + Math.sin(d.phase) * 8 * S;
+      if (d.x < -10 * S) {
+        d.x = GAME_WIDTH + 10 * S;
+        d.y = Phaser.Math.Between(50 * S, GAME_HEIGHT - 80 * S);
         d.baseY = d.y;
       }
       this.gfx.fillStyle(0xf5e6ca, d.alpha);

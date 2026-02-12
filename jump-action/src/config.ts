@@ -5,11 +5,16 @@ import { GameScene } from "./scenes/GameScene";
 import { GameOverScene } from "./scenes/GameOverScene";
 
 export const config: Phaser.Types.Core.GameConfig = {
-  type: Phaser.AUTO,
+  type: Phaser.WEBGL,
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
   backgroundColor: COLOR_SKY,
   parent: document.body,
+  render: {
+    antialias: true,
+    pixelArt: false,
+    roundPixels: false,
+  },
   physics: {
     default: "arcade",
     arcade: {
