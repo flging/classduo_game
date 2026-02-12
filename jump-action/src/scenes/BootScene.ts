@@ -68,6 +68,22 @@ export class BootScene extends Phaser.Scene {
     g.closePath();
     g.strokePath();
 
+    // Center seam (과잠 zipper line)
+    const seamX = bodyX + bodyW / 2;
+    const seamTop = bodyY + 24;
+    const seamBot = bodyY + bodyH - 2;
+    g.lineStyle(2, 0x922b21);
+    g.lineBetween(seamX, seamTop, seamX, seamBot);
+
+    // "K" on left chest
+    const kx = bodyX + 7;
+    const ky = bodyY + 25;
+    const kh = 8;
+    g.lineStyle(1.5, 0xffffff);
+    g.lineBetween(kx, ky, kx, ky + kh);                 // vertical stroke
+    g.lineBetween(kx + 5, ky, kx, ky + kh * 0.45);      // upper diagonal
+    g.lineBetween(kx, ky + kh * 0.45, kx + 5, ky + kh); // lower diagonal
+
     // Face (white oval)
     const faceCx = cx + 2;
     const faceCy = topPad + 14;
