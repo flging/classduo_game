@@ -1,10 +1,10 @@
 import Phaser from "phaser";
-import { QUIZ_WORD_WIDTH, QUIZ_WORD_HEIGHT } from "../constants";
+import { QUIZ_ITEM_SIZE } from "../constants";
 
 export class QuizItem extends Phaser.Physics.Arcade.Sprite {
   readonly keyword: string;
   readonly isCorrect: boolean;
-  private label: Phaser.GameObjects.Text;
+  private trail: Phaser.GameObjects.Graphics;
 
   constructor(
     scene: Phaser.Scene,
@@ -13,7 +13,7 @@ export class QuizItem extends Phaser.Physics.Arcade.Sprite {
     keyword: string,
     isCorrect: boolean
   ) {
-    super(scene, x, y, "quizWord");
+    super(scene, x, y, "meteor");
 
     this.keyword = keyword;
     this.isCorrect = isCorrect;
@@ -21,17 +21,10 @@ export class QuizItem extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    // Let body auto-scale via displaySize — no manual setSize
-    this.setDisplaySize(QUIZ_WORD_WIDTH, QUIZ_WORD_HEIGHT);
+    this.setDisplaySize(QUIZ_ITEM_SIZE, QUIZ_ITEM_SIZE);
 
-    this.label = scene.add
-      .text(x, y, keyword, {
-        fontFamily: "monospace",
-        fontSize: "14px",
-        color: "#ffffff",
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5);
+    this.trail = scene.add.graphics();
+    this.trail.setDepth((this.depth ?? 0) - 1);
   }
 
   setScrollSpeed(speed: number): void {
@@ -41,15 +34,25 @@ export class QuizItem extends Phaser.Physics.Arcade.Sprite {
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
 
-    this.label.setPosition(this.x, this.y);
+    // Draw trail behind the meteor (to the right, since it moves left)
+    this.trail.clear();
+    const trailCount = 6;
+    for (let i = 1; i <= trailCount; i++) {
+      const t = i / trailCount;
+      const radius = (QUIZ_ITEM_SIZE / 3) * (1 - t * 0.8);
+      const alpha = 0.4 * (1 - t);
+      const offsetX = i * 10;
+      this.trail.fillStyle(0xff6b35, alpha);
+      this.trail.fillCircle(this.x + offsetX, this.y, radius);
+    }
 
-    if (this.x + QUIZ_WORD_WIDTH / 2 < 0) {
-      this.destroyWithLabel();
+    if (this.x + QUIZ_ITEM_SIZE / 2 < 0) {
+      this.destroyWithTrail();
     }
   }
 
-  destroyWithLabel(): void {
-    this.label.destroy();
+  destroyWithTrail(): void {
+    this.trail.destroy();
     this.destroy();
   }
 }

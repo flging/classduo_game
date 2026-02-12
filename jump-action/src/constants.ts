@@ -43,7 +43,7 @@ export const COLOR_COIN = 0xf1c40f;
 
 // Quiz
 export const QUIZ_TRIGGER_COINS = 30;
-export const QUIZ_ANNOUNCE_MS = 800;
+export const QUIZ_ANNOUNCE_MS = 3000;
 export const QUIZ_WINDOW_MS = 5000;
 export const QUIZ_RESULT_MS = 1000;
 export const QUIZ_ITEM_SIZE = 44;

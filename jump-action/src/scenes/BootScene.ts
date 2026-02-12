@@ -4,13 +4,11 @@ import {
   GROUND_TILE_WIDTH,
   GROUND_HEIGHT,
   COIN_SIZE,
-  QUIZ_WORD_WIDTH,
-  QUIZ_WORD_HEIGHT,
+  QUIZ_ITEM_SIZE,
   COLOR_PLAYER,
   COLOR_GROUND,
   COLOR_GROUND_TOP,
   COLOR_COIN,
-  COLOR_QUIZ_WORD,
 } from "../constants";
 
 export class BootScene extends Phaser.Scene {
@@ -22,7 +20,7 @@ export class BootScene extends Phaser.Scene {
     this.createPlayerTexture();
     this.createGroundTileTexture();
     this.createCoinTexture();
-    this.createQuizWordTexture();
+    this.createMeteorTexture();
     this.scene.start("GameScene");
   }
 
@@ -84,18 +82,23 @@ export class BootScene extends Phaser.Scene {
     g.destroy();
   }
 
-  private createQuizWordTexture(): void {
-    const w = QUIZ_WORD_WIDTH;
-    const h = QUIZ_WORD_HEIGHT;
+  private createMeteorTexture(): void {
+    const size = QUIZ_ITEM_SIZE;
     const g = this.add.graphics();
 
-    g.fillStyle(COLOR_QUIZ_WORD);
-    g.fillRoundedRect(0, 0, w, h, 8);
+    // Outer glow
+    g.fillStyle(0xff6b35, 0.3);
+    g.fillCircle(size / 2, size / 2, size / 2);
 
-    g.lineStyle(2, 0x2980b9);
-    g.strokeRoundedRect(1, 1, w - 2, h - 2, 8);
+    // Core
+    g.fillStyle(0xffaa00);
+    g.fillCircle(size / 2, size / 2, size / 3);
 
-    g.generateTexture("quizWord", w, h);
+    // Center highlight
+    g.fillStyle(0xffff99);
+    g.fillCircle(size / 2, size / 2, size / 5);
+
+    g.generateTexture("meteor", size, size);
     g.destroy();
   }
 }

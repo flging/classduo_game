@@ -11,6 +11,7 @@ import {
   QUIZ_WINDOW_MS,
   QUIZ_RESULT_MS,
   QUIZ_ITEM_HIGH_Y,
+  QUIZ_ITEM_SIZE,
   QUIZ_ITEM_SPACING_X,
   SCORE_BONUS,
 } from "../constants";
@@ -61,6 +62,7 @@ export class QuizManager {
   private usedQuestions: Set<number> = new Set();
   private timeoutTimer: Phaser.Time.TimerEvent | null = null;
   private rewardUI: Phaser.GameObjects.GameObject[] = [];
+  private previewMarkers: Phaser.GameObjects.GameObject[] = [];
 
   constructor(
     scene: Phaser.Scene,
@@ -89,9 +91,17 @@ export class QuizManager {
       .setOrigin(0.5)
       .setDepth(10);
 
+    const allWords = Phaser.Utils.Array.Shuffle([
+      question.correctAnswer,
+      ...question.wrongAnswers,
+    ]);
+
+    this.spawnPreviewMarkers(allWords);
+
     this.scene.time.delayedCall(QUIZ_ANNOUNCE_MS, () => {
+      this.clearPreviewMarkers();
       this.callbacks.setGameState("quiz_active");
-      this.spawnQuizItems(question);
+      this.spawnQuizItems(allWords, question.correctAnswer);
 
       this.timeoutTimer = this.scene.time.delayedCall(QUIZ_WINDOW_MS, () => {
         this.handleTimeout();
@@ -115,6 +125,7 @@ export class QuizManager {
     this.clearBanner();
     this.clearResult();
     this.clearRewardUI();
+    this.clearPreviewMarkers();
     if (this.timeoutTimer) {
       this.timeoutTimer.remove();
       this.timeoutTimer = null;
@@ -141,20 +152,17 @@ export class QuizManager {
     return available[idx];
   }
 
-  private spawnQuizItems(question: QuizQuestion): void {
-    const allWords = [question.correctAnswer, ...question.wrongAnswers];
-    Phaser.Utils.Array.Shuffle(allWords);
-
+  private spawnQuizItems(words: string[], correctAnswer: string): void {
     const speed = this.callbacks.getScrollSpeed();
     const startX = GAME_WIDTH + 50;
     const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
     const lowY = groundTop - 25;
 
-    allWords.forEach((word, i) => {
+    words.forEach((word, i) => {
       const isHigh = i % 2 === 0;
       const y = isHigh ? QUIZ_ITEM_HIGH_Y : lowY;
       const x = startX + i * QUIZ_ITEM_SPACING_X;
-      const isCorrect = word === question.correctAnswer;
+      const isCorrect = word === correctAnswer;
 
       const item = new QuizItem(this.scene, x, y, word, isCorrect);
       this.quizItems.add(item);
@@ -351,6 +359,59 @@ export class QuizManager {
     this.callbacks.setGameState("playing");
   }
 
+  // ---- Preview markers ----
+
+  private spawnPreviewMarkers(words: string[]): void {
+    const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
+    const lowY = groundTop - 25;
+    const totalWidth = (words.length - 1) * QUIZ_ITEM_SPACING_X;
+    const startX = (GAME_WIDTH - totalWidth) / 2;
+
+    words.forEach((word, i) => {
+      const isHigh = i % 2 === 0;
+      const y = isHigh ? QUIZ_ITEM_HIGH_Y : lowY;
+      const x = startX + i * QUIZ_ITEM_SPACING_X;
+
+      const container = this.scene.add.container(x, y).setDepth(5);
+
+      const bg = this.scene.add.graphics();
+      bg.fillStyle(0x3498db, 0.4);
+      bg.fillRoundedRect(
+        -QUIZ_ITEM_SIZE / 2,
+        -QUIZ_ITEM_SIZE / 2,
+        QUIZ_ITEM_SIZE,
+        QUIZ_ITEM_SIZE,
+        8
+      );
+      container.add(bg);
+
+      const text = this.scene.add
+        .text(0, 0, word, {
+          fontFamily: "monospace",
+          fontSize: "14px",
+          color: "#ffffff",
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5);
+      container.add(text);
+
+      this.scene.tweens.add({
+        targets: container,
+        alpha: { from: 1, to: 0.3 },
+        duration: 300,
+        yoyo: true,
+        repeat: -1,
+      });
+
+      this.previewMarkers.push(container);
+    });
+  }
+
+  private clearPreviewMarkers(): void {
+    this.previewMarkers.forEach((m) => m.destroy());
+    this.previewMarkers = [];
+  }
+
   // ---- Cleanup helpers ----
 
   private clearRewardUI(): void {
@@ -361,7 +422,7 @@ export class QuizManager {
   private clearQuizItems(): void {
     this.quizItems.getChildren().forEach((obj) => {
       const item = obj as QuizItem;
-      item.destroyWithLabel();
+      item.destroyWithTrail();
     });
     this.quizItems.clear(true);
   }
