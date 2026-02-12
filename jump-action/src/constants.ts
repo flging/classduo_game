@@ -76,6 +76,12 @@ export const HP_BAR_RADIUS = 11;
 export const HP_BAR_PADDING = 3;
 export const COLOR_HP_HEART = 0xe74c3c;
 export const COLOR_HP_HEART_SHINE = 0xf1948a;
+export const HP_MAX_BOOST = 5000;          // 최대 체력 +5초
+export const HP_RESTORE_AMOUNT = 8000;     // 현재 체력 +8초
+export const HP_DECAY_STACK_BASE = 1.15;   // 감소 속도 스택당 15%
+export const HP_DECAY_MULT_MIN = 0.4;
+export const HP_DECAY_MULT_MAX = 2.5;
+export const HP_MAX_MIN = 15000;           // 최대 체력 하한 (15초)
 
 // Fall death
 export const FALL_DEATH_Y = GAME_HEIGHT + 50;

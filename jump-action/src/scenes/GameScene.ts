@@ -47,6 +47,12 @@ import {
   HP_BAR_PADDING,
   COLOR_HP_HEART,
   COLOR_HP_HEART_SHINE,
+  HP_MAX_BOOST,
+  HP_RESTORE_AMOUNT,
+  HP_DECAY_STACK_BASE,
+  HP_DECAY_MULT_MIN,
+  HP_DECAY_MULT_MAX,
+  HP_MAX_MIN,
   EFFECT_DISPLAY_MS,
 } from "../constants";
 
@@ -73,6 +79,9 @@ export class GameScene extends Phaser.Scene {
   private jumpCountStacks = 0;
 
   private hp = HP_MAX;
+  private hpMax = HP_MAX;
+  private hpDecayStacks = 0;
+  private hpDecayMultiplier = 1;
   private hpGaugeFrame!: Phaser.GameObjects.Graphics;
   private hpGaugeFill!: Phaser.GameObjects.Graphics;
 
@@ -96,6 +105,9 @@ export class GameScene extends Phaser.Scene {
     this.totalCoinsCollected = 0;
     this.lastQuizCoinThreshold = 0;
     this.hp = HP_MAX;
+    this.hpMax = HP_MAX;
+    this.hpDecayStacks = 0;
+    this.hpDecayMultiplier = 1;
 
     // Extend world bounds downward for fall death
     this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT + 200);
@@ -214,6 +226,12 @@ export class GameScene extends Phaser.Scene {
       applyJumpCountDown: () => this.applyJumpCountDown(),
       isJumpCountMaxed: () => this.player.maxJumps >= JUMP_COUNT_MAX,
       isJumpCountAtMin: () => this.player.maxJumps <= JUMP_COUNT_MIN,
+      applyHpMaxUp: () => this.applyHpMaxUp(),
+      applyHpMaxDown: () => this.applyHpMaxDown(),
+      applyHpRestore: () => this.applyHpRestore(),
+      applyHpDrain: () => this.applyHpDrain(),
+      applyHpDecayDown: () => this.applyHpDecayDown(),
+      applyHpDecayUp: () => this.applyHpDecayUp(),
       setGameState: (state: GameState) => {
         this.gameState = state;
       },
@@ -441,6 +459,41 @@ export class GameScene extends Phaser.Scene {
     );
   }
 
+  private applyHpMaxUp(): void {
+    this.hpMax += HP_MAX_BOOST;
+  }
+
+  private applyHpMaxDown(): void {
+    this.hpMax = Math.max(HP_MAX_MIN, this.hpMax - HP_MAX_BOOST);
+    this.hp = Math.min(this.hp, this.hpMax);
+  }
+
+  private applyHpRestore(): void {
+    this.hp = Math.min(this.hp + HP_RESTORE_AMOUNT, this.hpMax);
+  }
+
+  private applyHpDrain(): void {
+    this.hp = Math.max(1, this.hp - HP_RESTORE_AMOUNT);
+  }
+
+  private applyHpDecayDown(): void {
+    this.hpDecayStacks--;
+    this.hpDecayMultiplier = Phaser.Math.Clamp(
+      Math.pow(HP_DECAY_STACK_BASE, this.hpDecayStacks),
+      HP_DECAY_MULT_MIN,
+      HP_DECAY_MULT_MAX
+    );
+  }
+
+  private applyHpDecayUp(): void {
+    this.hpDecayStacks++;
+    this.hpDecayMultiplier = Phaser.Math.Clamp(
+      Math.pow(HP_DECAY_STACK_BASE, this.hpDecayStacks),
+      HP_DECAY_MULT_MIN,
+      HP_DECAY_MULT_MAX
+    );
+  }
+
   private showEffect(text: string, color: string): void {
     this.effectText.setText(text).setColor(color).setAlpha(1);
     this.effectDisplayTimer?.remove();
@@ -515,7 +568,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateHpGauge(): void {
-    const ratio = this.hp / HP_MAX;
+    const ratio = this.hp / this.hpMax;
     const pad = HP_BAR_PADDING;
     const innerW = HP_BAR_WIDTH - pad * 2;
     const innerH = HP_BAR_HEIGHT - pad * 2;
@@ -585,7 +638,7 @@ export class GameScene extends Phaser.Scene {
       return;
 
     // HP gauge
-    this.hp -= delta;
+    this.hp -= delta * this.hpDecayMultiplier;
     if (this.hp <= 0) {
       this.hp = 0;
       this.updateHpGauge();

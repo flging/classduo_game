@@ -14,6 +14,8 @@ import {
   QUIZ_ITEM_SIZE,
   QUIZ_ITEM_SPACING_X,
   SCORE_BONUS,
+  HP_MAX_BOOST,
+  HP_RESTORE_AMOUNT,
 } from "../constants";
 
 export type GameState =
@@ -34,6 +36,12 @@ export interface QuizCallbacks {
   applyJumpCountDown: () => void;
   isJumpCountMaxed: () => boolean;
   isJumpCountAtMin: () => boolean;
+  applyHpMaxUp: () => void;
+  applyHpMaxDown: () => void;
+  applyHpRestore: () => void;
+  applyHpDrain: () => void;
+  applyHpDecayDown: () => void;
+  applyHpDecayUp: () => void;
   setGameState: (state: GameState) => void;
   addScore: (amount: number) => void;
   showEffect: (text: string, color: string) => void;
@@ -51,6 +59,9 @@ const REWARD_CARDS: CardDef[] = [
   { type: "jumpCount", title: "점프횟수 UP", desc: "점프 횟수 +1", color: 0x9b59b6 },
   { type: "speed", title: "속도 UP", desc: "이동속도 15% 증가", color: 0x3498db },
   { type: "score", title: `+${SCORE_BONUS}점`, desc: "즉시 점수 획득", color: 0xf1c40f },
+  { type: "hpMax", title: "최대 체력 UP", desc: `최대 체력 +${HP_MAX_BOOST / 1000}초`, color: 0xe74c3c },
+  { type: "hpRestore", title: "체력 회복", desc: `현재 체력 +${HP_RESTORE_AMOUNT / 1000}초`, color: 0xff6b81 },
+  { type: "hpDecay", title: "감소 속도 DOWN", desc: "감소 속도 15% 감소", color: 0x1abc9c },
 ];
 
 export class QuizManager {
@@ -354,6 +365,33 @@ export class QuizManager {
         this.callbacks.showEffect(prefix + label, color);
         break;
       }
+      case "hpMax":
+        if (isCorrect) {
+          this.callbacks.applyHpMaxUp();
+          this.callbacks.showEffect(prefix + "MAX HP UP!", color);
+        } else {
+          this.callbacks.applyHpMaxDown();
+          this.callbacks.showEffect(prefix + "MAX HP DOWN!", color);
+        }
+        break;
+      case "hpRestore":
+        if (isCorrect) {
+          this.callbacks.applyHpRestore();
+          this.callbacks.showEffect(prefix + "HP RESTORE!", color);
+        } else {
+          this.callbacks.applyHpDrain();
+          this.callbacks.showEffect(prefix + "HP DRAIN!", color);
+        }
+        break;
+      case "hpDecay":
+        if (isCorrect) {
+          this.callbacks.applyHpDecayDown();
+          this.callbacks.showEffect(prefix + "DECAY SLOW!", color);
+        } else {
+          this.callbacks.applyHpDecayUp();
+          this.callbacks.showEffect(prefix + "DECAY FAST!", color);
+        }
+        break;
     }
 
     this.callbacks.setGameState("playing");
