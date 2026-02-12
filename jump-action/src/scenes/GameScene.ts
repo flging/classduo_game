@@ -116,11 +116,13 @@ export class GameScene extends Phaser.Scene {
     // Extend world bounds downward for fall death
     this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT + 200);
 
-    // Parallax mountain background
-    const mountainH = 120;
+    // Parallax mountain background (extends below ground so it shows through gaps)
+    const mountainPeakH = 120;
     const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
+    const mountainTop = groundTop - mountainPeakH;
+    const mountainSpriteH = GAME_HEIGHT - mountainTop;
     this.mountainLayer = this.add
-      .tileSprite(0, groundTop - mountainH, GAME_WIDTH, mountainH, "mountains_far")
+      .tileSprite(0, mountainTop, GAME_WIDTH, mountainSpriteH, "mountains_far")
       .setOrigin(0, 0)
       .setDepth(0);
 

@@ -290,7 +290,7 @@ export class BootScene extends Phaser.Scene {
 
   private createMountainTexture(): void {
     const w = 800;
-    const h = 120;
+    const h = 160;
     const g = this.add.graphics();
 
     // Mountain silhouette in light blue-gray
