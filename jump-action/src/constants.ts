@@ -65,15 +65,17 @@ export const JUMP_COUNT_MAX = 4;
 export const SCORE_BONUS = 30;
 export const EFFECT_DISPLAY_MS = 1500;
 
-// Time gauge (Cookie Run style)
-export const TIME_GAUGE_MAX_MS = 60000;  // 60초
-export const TIME_GAUGE_ICON_RADIUS = 14;
-export const TIME_GAUGE_BAR_X = 36;
-export const TIME_GAUGE_BAR_Y = 8;
-export const TIME_GAUGE_BAR_WIDTH = 200;
-export const TIME_GAUGE_BAR_HEIGHT = 22;
-export const TIME_GAUGE_BAR_RADIUS = 11;
-export const TIME_GAUGE_PADDING = 3;
+// HP gauge (Cookie Run style)
+export const HP_MAX = 60000;  // 60초
+export const HP_ICON_RADIUS = 14;
+export const HP_BAR_X = 36;
+export const HP_BAR_Y = 8;
+export const HP_BAR_WIDTH = 200;
+export const HP_BAR_HEIGHT = 22;
+export const HP_BAR_RADIUS = 11;
+export const HP_BAR_PADDING = 3;
+export const COLOR_HP_HEART = 0xe74c3c;
+export const COLOR_HP_HEART_SHINE = 0xf1948a;
 
 // Fall death
 export const FALL_DEATH_Y = GAME_HEIGHT + 50;

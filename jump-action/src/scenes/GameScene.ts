@@ -37,14 +37,16 @@ import {
   JUMP_MULT_MAX,
   JUMP_COUNT_MIN,
   JUMP_COUNT_MAX,
-  TIME_GAUGE_MAX_MS,
-  TIME_GAUGE_ICON_RADIUS,
-  TIME_GAUGE_BAR_X,
-  TIME_GAUGE_BAR_Y,
-  TIME_GAUGE_BAR_WIDTH,
-  TIME_GAUGE_BAR_HEIGHT,
-  TIME_GAUGE_BAR_RADIUS,
-  TIME_GAUGE_PADDING,
+  HP_MAX,
+  HP_ICON_RADIUS,
+  HP_BAR_X,
+  HP_BAR_Y,
+  HP_BAR_WIDTH,
+  HP_BAR_HEIGHT,
+  HP_BAR_RADIUS,
+  HP_BAR_PADDING,
+  COLOR_HP_HEART,
+  COLOR_HP_HEART_SHINE,
   EFFECT_DISPLAY_MS,
 } from "../constants";
 
@@ -70,9 +72,9 @@ export class GameScene extends Phaser.Scene {
   private jumpStacks = 0;
   private jumpCountStacks = 0;
 
-  private timeRemaining = TIME_GAUGE_MAX_MS;
-  private timeGaugeContainer!: Phaser.GameObjects.Graphics;
-  private timeGaugeFill!: Phaser.GameObjects.Graphics;
+  private hp = HP_MAX;
+  private hpGaugeFrame!: Phaser.GameObjects.Graphics;
+  private hpGaugeFill!: Phaser.GameObjects.Graphics;
 
   private quizManager!: QuizManager;
   private effectDisplayTimer?: Phaser.Time.TimerEvent;
@@ -93,7 +95,7 @@ export class GameScene extends Phaser.Scene {
     this.distanceTraveled = 0;
     this.totalCoinsCollected = 0;
     this.lastQuizCoinThreshold = 0;
-    this.timeRemaining = TIME_GAUGE_MAX_MS;
+    this.hp = HP_MAX;
 
     // Extend world bounds downward for fall death
     this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT + 200);
@@ -151,12 +153,12 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(1, 0)
       .setDepth(5);
 
-    // Cookie Run style time gauge
-    this.timeGaugeContainer = this.add.graphics().setDepth(5);
-    this.drawGaugeFrame();
+    // HP gauge
+    this.hpGaugeFrame = this.add.graphics().setDepth(5);
+    this.drawHpGaugeFrame();
 
-    this.timeGaugeFill = this.add.graphics().setDepth(5);
-    this.updateTimeGauge();
+    this.hpGaugeFill = this.add.graphics().setDepth(5);
+    this.updateHpGauge();
 
     this.effectText = this.add
       .text(GAME_WIDTH / 2, 20, "", {
@@ -447,54 +449,77 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  // ---- Time gauge (Cookie Run style) ----
+  // ---- HP gauge ----
 
-  private drawGaugeFrame(): void {
-    const g = this.timeGaugeContainer;
-    const iconCx = TIME_GAUGE_ICON_RADIUS + 4;
-    const iconCy = TIME_GAUGE_BAR_Y + TIME_GAUGE_BAR_HEIGHT / 2;
-    const r = TIME_GAUGE_ICON_RADIUS;
+  private drawHeartIcon(
+    g: Phaser.GameObjects.Graphics,
+    cx: number,
+    cy: number,
+    r: number
+  ): void {
+    const topY = cy - r * 0.4;
+    const botY = cy + r;
+    const lx = cx - r * 0.55;
+    const rx = cx + r * 0.55;
+    const bulgeR = r * 0.55;
 
-    // Clock face: white circle with dark border
-    g.lineStyle(3, 0x2c3e50, 1);
-    g.fillStyle(0xffffff, 1);
-    g.fillCircle(iconCx, iconCy, r);
-    g.strokeCircle(iconCx, iconCy, r);
+    g.fillStyle(COLOR_HP_HEART, 1);
+    g.beginPath();
+    // Left bulge
+    g.arc(lx, topY, bulgeR, Math.PI, 0, false);
+    // Right bulge
+    g.arc(rx, topY, bulgeR, Math.PI, 0, false);
+    // Bottom point
+    g.lineTo(cx, botY);
+    g.closePath();
+    g.fillPath();
 
-    // Clock hands
-    g.lineStyle(2, 0x2c3e50, 1);
-    // Hour hand (pointing up-right)
-    g.lineBetween(iconCx, iconCy, iconCx, iconCy - r * 0.5);
-    // Minute hand (pointing right)
-    g.lineBetween(iconCx, iconCy, iconCx + r * 0.6, iconCy - r * 0.2);
+    // Outline
+    g.lineStyle(2, 0x922b21, 1);
+    g.beginPath();
+    g.arc(lx, topY, bulgeR, Math.PI, 0, false);
+    g.arc(rx, topY, bulgeR, Math.PI, 0, false);
+    g.lineTo(cx, botY);
+    g.closePath();
+    g.strokePath();
 
-    // Center dot
-    g.fillStyle(0x2c3e50, 1);
-    g.fillCircle(iconCx, iconCy, 2);
+    // Shine highlight
+    g.fillStyle(COLOR_HP_HEART_SHINE, 0.6);
+    g.fillCircle(lx - bulgeR * 0.15, topY - bulgeR * 0.2, bulgeR * 0.3);
+  }
+
+  private drawHpGaugeFrame(): void {
+    const g = this.hpGaugeFrame;
+    const iconCx = HP_ICON_RADIUS + 4;
+    const iconCy = HP_BAR_Y + HP_BAR_HEIGHT / 2;
+    const r = HP_ICON_RADIUS;
+
+    // Heart icon
+    this.drawHeartIcon(g, iconCx, iconCy, r);
 
     // Bar frame: dark rounded rect background
     g.fillStyle(0x1a1a2e, 1);
     g.fillRoundedRect(
-      TIME_GAUGE_BAR_X, TIME_GAUGE_BAR_Y,
-      TIME_GAUGE_BAR_WIDTH, TIME_GAUGE_BAR_HEIGHT,
-      TIME_GAUGE_BAR_RADIUS
+      HP_BAR_X, HP_BAR_Y,
+      HP_BAR_WIDTH, HP_BAR_HEIGHT,
+      HP_BAR_RADIUS
     );
 
     // Inner border highlight
     g.lineStyle(2, 0x3d3d5c, 1);
     g.strokeRoundedRect(
-      TIME_GAUGE_BAR_X, TIME_GAUGE_BAR_Y,
-      TIME_GAUGE_BAR_WIDTH, TIME_GAUGE_BAR_HEIGHT,
-      TIME_GAUGE_BAR_RADIUS
+      HP_BAR_X, HP_BAR_Y,
+      HP_BAR_WIDTH, HP_BAR_HEIGHT,
+      HP_BAR_RADIUS
     );
   }
 
-  private updateTimeGauge(): void {
-    const ratio = this.timeRemaining / TIME_GAUGE_MAX_MS;
-    const pad = TIME_GAUGE_PADDING;
-    const innerW = TIME_GAUGE_BAR_WIDTH - pad * 2;
-    const innerH = TIME_GAUGE_BAR_HEIGHT - pad * 2;
-    const innerR = TIME_GAUGE_BAR_RADIUS - pad;
+  private updateHpGauge(): void {
+    const ratio = this.hp / HP_MAX;
+    const pad = HP_BAR_PADDING;
+    const innerW = HP_BAR_WIDTH - pad * 2;
+    const innerH = HP_BAR_HEIGHT - pad * 2;
+    const innerR = HP_BAR_RADIUS - pad;
     const fillW = Math.max(0, innerW * ratio);
 
     let color: number;
@@ -510,13 +535,13 @@ export class GameScene extends Phaser.Scene {
       shineColor = 0xec7063;
     }
 
-    const g = this.timeGaugeFill;
+    const g = this.hpGaugeFill;
     g.clear();
 
     if (fillW <= 0) return;
 
-    const fx = TIME_GAUGE_BAR_X + pad;
-    const fy = TIME_GAUGE_BAR_Y + pad;
+    const fx = HP_BAR_X + pad;
+    const fy = HP_BAR_Y + pad;
 
     // Main fill
     g.fillStyle(color, 1);
@@ -559,15 +584,15 @@ export class GameScene extends Phaser.Scene {
     if (this.gameState === "game_over" || this.gameState === "choosing_reward")
       return;
 
-    // Time gauge
-    this.timeRemaining -= delta;
-    if (this.timeRemaining <= 0) {
-      this.timeRemaining = 0;
-      this.updateTimeGauge();
+    // HP gauge
+    this.hp -= delta;
+    if (this.hp <= 0) {
+      this.hp = 0;
+      this.updateHpGauge();
       this.triggerGameOver();
       return;
     }
-    this.updateTimeGauge();
+    this.updateHpGauge();
 
     this.player.update(time, delta);
 
