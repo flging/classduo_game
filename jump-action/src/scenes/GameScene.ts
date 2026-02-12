@@ -48,12 +48,10 @@ import {
   HP_BAR_PADDING,
   COLOR_HP_HEART,
   COLOR_HP_HEART_SHINE,
-  HP_MAX_BOOST,
   HP_RESTORE_AMOUNT,
   HP_DECAY_STACK_BASE,
   HP_DECAY_MULT_MIN,
   HP_DECAY_MULT_MAX,
-  HP_MAX_MIN,
   EFFECT_DISPLAY_MS,
 } from "../constants";
 
@@ -232,8 +230,6 @@ export class GameScene extends Phaser.Scene {
       applyJumpCountDown: () => this.applyJumpCountDown(),
       isJumpCountMaxed: () => this.player.maxJumps >= JUMP_COUNT_MAX,
       isJumpCountAtMin: () => this.player.maxJumps <= JUMP_COUNT_MIN,
-      applyHpMaxUp: () => this.applyHpMaxUp(),
-      applyHpMaxDown: () => this.applyHpMaxDown(),
       applyHpRestore: () => this.applyHpRestore(),
       applyHpDrain: () => this.applyHpDrain(),
       applyHpDecayDown: () => this.applyHpDecayDown(),
@@ -452,17 +448,6 @@ export class GameScene extends Phaser.Scene {
     );
   }
 
-  private applyHpMaxUp(): void {
-    this.hpMax += HP_MAX_BOOST;
-    this.drawHpGaugeFrame();
-  }
-
-  private applyHpMaxDown(): void {
-    this.hpMax = Math.max(HP_MAX_MIN, this.hpMax - HP_MAX_BOOST);
-    this.hp = Math.min(this.hp, this.hpMax);
-    this.drawHpGaugeFrame();
-  }
-
   private applyHpRestore(): void {
     this.hp = Math.min(this.hp + HP_RESTORE_AMOUNT, this.hpMax);
   }
@@ -537,7 +522,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private getHpBarWidth(): number {
-    return HP_BAR_WIDTH * (this.hpMax / HP_MAX);
+    return HP_BAR_WIDTH;
   }
 
   private drawHpGaugeFrame(): void {
