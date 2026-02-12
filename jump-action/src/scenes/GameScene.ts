@@ -686,7 +686,7 @@ export class GameScene extends Phaser.Scene {
     if (this.hp <= 0) {
       this.hp = 0;
       this.updateHpGauge();
-      this.triggerGameOver();
+      this.triggerGameOver('hp');
       return;
     }
     this.updateHpGauge();
@@ -713,17 +713,19 @@ export class GameScene extends Phaser.Scene {
 
     // Fall death
     if (this.player.y > FALL_DEATH_Y) {
-      this.triggerGameOver();
+      this.triggerGameOver('fall');
     }
   }
 
-  private triggerGameOver(): void {
+  private triggerGameOver(cause: 'hp' | 'fall'): void {
     if (this.gameState === "game_over") return;
     this.gameState = "game_over";
 
-    this.cameras.main.shake(200, 0.01);
-    this.quizManager.cleanup();
+    if (cause === 'fall') {
+      this.cameras.main.shake(200, 0.01);
+    }
 
+    this.quizManager.cleanup();
     this.effectDisplayTimer?.remove();
 
     this.grounds.getChildren().forEach((obj) => {
@@ -737,10 +739,27 @@ export class GameScene extends Phaser.Scene {
     this.player.stop();
     this.player.setTexture("player_dead");
     this.player.setAngle(0);
-    this.player.setTint(0xff0000);
 
-    this.time.delayedCall(HIT_FREEZE_DURATION, () => {
-      this.scene.start("GameOverScene", { score: this.score });
-    });
+    if (cause === 'hp') {
+      // Collapse animation: tilt sideways and sink slightly
+      this.player.setTint(0xcccccc);
+      this.tweens.add({
+        targets: this.player,
+        angle: 90,
+        y: this.player.y + 10,
+        duration: 500,
+        ease: 'Power2',
+        onComplete: () => {
+          this.time.delayedCall(800, () => {
+            this.scene.start("GameOverScene", { score: this.score });
+          });
+        },
+      });
+    } else {
+      this.player.setTint(0xff0000);
+      this.time.delayedCall(HIT_FREEZE_DURATION, () => {
+        this.scene.start("GameOverScene", { score: this.score });
+      });
+    }
   }
 }
