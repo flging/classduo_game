@@ -25,7 +25,7 @@ import {
   COIN_ARC_COUNT,
   COIN_GROUND_Y_OFFSET,
   COIN_HIGH_Y,
-  QUIZ_TRIGGER_COINS,
+  QUIZ_INTERVAL_MS,
   FALL_DEATH_Y,
   HIT_FREEZE_DURATION,
   MAX_JUMPS,
@@ -72,7 +72,7 @@ export class GameScene extends Phaser.Scene {
   private nextGroundX = 0;
   private distanceTraveled = 0;
   private totalCoinsCollected = 0;
-  private lastQuizCoinThreshold = 0;
+  private quizTimer = 0;
 
   private speedStacks = 0;
   private jumpStacks = 0;
@@ -103,7 +103,7 @@ export class GameScene extends Phaser.Scene {
     this.nextGroundX = 0;
     this.distanceTraveled = 0;
     this.totalCoinsCollected = 0;
-    this.lastQuizCoinThreshold = 0;
+    this.quizTimer = 0;
     this.hp = HP_MAX;
     this.hpMax = HP_MAX;
     this.hpDecayStacks = 0;
@@ -372,19 +372,6 @@ export class GameScene extends Phaser.Scene {
         this.baseScrollSpeed + SCROLL_SPEED_INCREMENT,
         SCROLL_SPEED_MAX
       );
-    }
-
-    // Quiz trigger
-    const currentThreshold =
-      Math.floor(this.totalCoinsCollected / QUIZ_TRIGGER_COINS) *
-      QUIZ_TRIGGER_COINS;
-    if (
-      currentThreshold > this.lastQuizCoinThreshold &&
-      this.totalCoinsCollected >= QUIZ_TRIGGER_COINS &&
-      this.gameState === "playing"
-    ) {
-      this.lastQuizCoinThreshold = currentThreshold;
-      this.quizManager.startQuiz();
     }
   };
 
@@ -656,6 +643,15 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.updateHpGauge();
+
+    // Quiz timer (only ticks during playing)
+    if (this.gameState === "playing") {
+      this.quizTimer += delta;
+      if (this.quizTimer >= QUIZ_INTERVAL_MS) {
+        this.quizTimer = 0;
+        this.quizManager.startQuiz();
+      }
+    }
 
     this.player.update(time, delta);
 

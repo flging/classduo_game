@@ -42,7 +42,7 @@ export const COIN_HIGH_Y = 220;
 export const COLOR_COIN = 0xf1c40f;
 
 // Quiz
-export const QUIZ_TRIGGER_COINS = 30;
+export const QUIZ_INTERVAL_MS = 20000;   // 20초마다 퀴즈
 export const QUIZ_ANNOUNCE_MS = 3000;
 export const QUIZ_WINDOW_MS = 5000;
 export const QUIZ_RESULT_MS = 1000;
