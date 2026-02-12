@@ -5,7 +5,6 @@ import {
   GROUND_HEIGHT,
   COIN_SIZE,
   QUIZ_ITEM_SIZE,
-  COLOR_PLAYER,
   COLOR_GROUND,
   COLOR_GROUND_TOP,
   COLOR_COIN,
@@ -27,10 +26,24 @@ export class BootScene extends Phaser.Scene {
   private createPlayerTexture(): void {
     const size = PLAYER_SIZE;
     const g = this.add.graphics();
+    const cx = size / 2;
 
-    g.fillStyle(COLOR_PLAYER);
+    // Red hood (body)
+    g.fillStyle(0xc0392b);
     g.fillRoundedRect(0, 0, size, size, 8);
 
+    // Hood top bump
+    g.fillStyle(0xc0392b);
+    g.fillCircle(cx, 2, size * 0.3);
+
+    // White round face
+    const faceR = size * 0.32;
+    const faceCx = cx + size * 0.1;
+    const faceCy = size * 0.42;
+    g.fillStyle(0xffffff);
+    g.fillCircle(faceCx, faceCy, faceR);
+
+    // Eyes (keep original style)
     g.fillStyle(0xffffff);
     g.fillCircle(size * 0.65, size * 0.3, 6);
     g.fillCircle(size * 0.85, size * 0.3, 5);
@@ -38,6 +51,11 @@ export class BootScene extends Phaser.Scene {
     g.fillStyle(0x222222);
     g.fillCircle(size * 0.68, size * 0.3, 3);
     g.fillCircle(size * 0.87, size * 0.3, 2.5);
+
+    // Small blush marks
+    g.fillStyle(0xffaaaa, 0.5);
+    g.fillCircle(faceCx - faceR * 0.6, faceCy + faceR * 0.35, 3);
+    g.fillCircle(faceCx + faceR * 0.7, faceCy + faceR * 0.35, 3);
 
     g.generateTexture("player", size, size);
     g.destroy();
