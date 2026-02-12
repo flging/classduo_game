@@ -18,6 +18,10 @@ import {
   EFFECT_DISPLAY_MS,
   SCORE_BOUNCE_SCALE,
   SCORE_BOUNCE_DURATION,
+  HP_FRAME_BG,
+  HP_FRAME_OUTLINE,
+  HP_COLORS,
+  HP_SEGMENT_COLOR,
 } from "../constants";
 
 export class UIManager {
@@ -70,12 +74,11 @@ export class UIManager {
       .setOrigin(1, 0)
       .setDepth(DEPTH_HUD);
 
-    // HP gauge frame
+    // HP gauge (frame behind fill)
     this.hpGaugeFrame = this.scene.add.graphics().setDepth(DEPTH_HUD);
-    this.heartIcon = this.scene.add.graphics().setDepth(DEPTH_HUD);
+    this.hpGaugeFill = this.scene.add.graphics().setDepth(DEPTH_HUD + 0.1);
+    this.heartIcon = this.scene.add.graphics().setDepth(DEPTH_HUD + 0.2);
     this.drawHpGaugeFrame();
-
-    this.hpGaugeFill = this.scene.add.graphics().setDepth(DEPTH_HUD);
 
     // Effect text
     this.effectText = this.scene.add
@@ -193,32 +196,45 @@ export class UIManager {
     g.clear();
 
     const barW = HP_BAR_WIDTH;
+    const bx = HP_BAR_X;
+    const by = HP_BAR_Y;
+    const bh = HP_BAR_HEIGHT;
+    const br = HP_BAR_RADIUS;
+    const pad = HP_BAR_PADDING;
 
-    // Bar frame
-    g.fillStyle(0x1a1a2e, 1);
-    g.fillRoundedRect(HP_BAR_X, HP_BAR_Y, barW, HP_BAR_HEIGHT, HP_BAR_RADIUS);
-    g.lineStyle(2, 0x3d3d5c, 1);
-    g.strokeRoundedRect(HP_BAR_X, HP_BAR_Y, barW, HP_BAR_HEIGHT, HP_BAR_RADIUS);
+    // Background fill (like character body base)
+    g.fillStyle(HP_FRAME_BG, 1);
+    g.fillRoundedRect(bx, by, barW, bh, br);
+
+    // Outline stroke (like character/heart 2px outline)
+    g.lineStyle(2, HP_FRAME_OUTLINE, 1);
+    g.strokeRoundedRect(bx, by, barW, bh, br);
 
     // Segment lines at 25%, 50%, 75%
-    g.lineStyle(1, 0x3d3d5c, 0.4);
-    const pad = HP_BAR_PADDING;
+    g.lineStyle(1, HP_SEGMENT_COLOR, 0.4);
     const innerW = barW - pad * 2;
     for (const frac of [0.25, 0.5, 0.75]) {
-      const lx = HP_BAR_X + pad + innerW * frac;
-      g.lineBetween(lx, HP_BAR_Y + pad, lx, HP_BAR_Y + HP_BAR_HEIGHT - pad);
+      const lx = bx + pad + innerW * frac;
+      g.lineBetween(lx, by + pad, lx, by + bh - pad);
     }
 
-    // Heart icon
+    // Heart icon (drawn at origin, positioned via setPosition)
     const iconCx = HP_ICON_RADIUS + 4;
-    const iconCy = HP_BAR_Y + HP_BAR_HEIGHT / 2;
-    this.drawHeartIcon(this.heartIcon, iconCx, iconCy, HP_ICON_RADIUS);
+    const iconCy = by + bh / 2;
+    this.heartIcon.clear();
+    this.drawHeartIcon(this.heartIcon, 0, 0, HP_ICON_RADIUS);
+    this.heartIcon.setPosition(iconCx, iconCy);
+  }
+
+  private getHpColors(displayRatio: number) {
+    if (displayRatio > 0.5) return HP_COLORS.high;
+    if (displayRatio > 0.25) return HP_COLORS.mid;
+    return HP_COLORS.low;
   }
 
   private drawHpFill(ratio: number): void {
-    const barW = HP_BAR_WIDTH;
     const pad = HP_BAR_PADDING;
-    const innerW = barW - pad * 2;
+    const innerW = HP_BAR_WIDTH - pad * 2;
     const innerH = HP_BAR_HEIGHT - pad * 2;
     const innerR = HP_BAR_RADIUS - pad;
 
@@ -227,47 +243,41 @@ export class UIManager {
     const displayRatio = Phaser.Math.Clamp(this.displayedHpRatio, 0, 1);
     const fillW = Math.max(0, innerW * displayRatio);
 
-    let color: number;
-    let shineColor: number;
-    if (displayRatio > 0.5) {
-      color = 0x2ecc71;
-      shineColor = 0x58d68d;
-    } else if (displayRatio > 0.25) {
-      color = 0xf39c12;
-      shineColor = 0xf5b041;
-    } else {
-      color = 0xe74c3c;
-      shineColor = 0xec7063;
-    }
-
-    // Damage flash override
-    if (this.hpDamageFlashTimer > 0) {
-      color = 0xffffff;
-      shineColor = 0xffffff;
-    }
-
     const g = this.hpGaugeFill;
     g.clear();
     if (fillW <= 0) return;
 
     const fx = HP_BAR_X + pad;
     const fy = HP_BAR_Y + pad;
+    const trR = fillW >= innerW - innerR ? innerR : 0;
+    const brR = fillW >= innerW - innerR ? innerR : 0;
+    const corners = { tl: innerR, tr: trR, bl: innerR, br: brR };
+    const cornersTop = { tl: innerR, tr: trR, bl: 0, br: 0 };
 
-    g.fillStyle(color, 1);
-    g.fillRoundedRect(fx, fy, fillW, innerH, {
-      tl: innerR,
-      tr: fillW >= innerW - innerR ? innerR : 0,
-      bl: innerR,
-      br: fillW >= innerW - innerR ? innerR : 0,
-    });
+    if (this.hpDamageFlashTimer > 0) {
+      // Damage flash (white)
+      g.fillStyle(0xffffff, 1);
+      g.fillRoundedRect(fx, fy, fillW, innerH, corners);
+      return;
+    }
 
-    g.fillStyle(shineColor, 0.4);
-    g.fillRoundedRect(fx, fy, fillW, innerH / 2, {
-      tl: innerR,
-      tr: fillW >= innerW - innerR ? innerR : 0,
-      bl: 0,
-      br: 0,
-    });
+    const colors = this.getHpColors(displayRatio);
+
+    // Dark base (like character body bottom color)
+    g.fillStyle(colors.dark, 1);
+    g.fillRoundedRect(fx, fy, fillW, innerH, corners);
+
+    // Main fill top half (like character body top color)
+    g.fillStyle(colors.fill, 1);
+    g.fillRoundedRect(fx, fy, fillW, innerH * 0.6, cornersTop);
+
+    // Shine highlight (like heart/coin shine circle)
+    g.fillStyle(colors.shine, 0.5);
+    g.fillRoundedRect(fx + 2, fy + 1, Math.max(0, fillW - 4), innerH * 0.3, cornersTop);
+
+    // Outline around fill (like character/heart outline)
+    g.lineStyle(2, colors.outline, 1);
+    g.strokeRoundedRect(fx, fy, fillW, innerH, corners);
   }
 
   // ── Update ──

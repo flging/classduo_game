@@ -67,16 +67,26 @@ export const SCORE_BONUS = 30;
 export const EFFECT_DISPLAY_MS = 1500;
 
 // HP gauge (Cookie Run style)
-export const HP_MAX = 60000;  // 60초
+export const HP_MAX = 90000;  // 90초
 export const HP_ICON_RADIUS = 14;
 export const HP_BAR_X = 36;
 export const HP_BAR_Y = 8;
-export const HP_BAR_WIDTH = 420;
-export const HP_BAR_HEIGHT = 22;
-export const HP_BAR_RADIUS = 11;
+export const HP_BAR_WIDTH = 600;
+export const HP_BAR_HEIGHT = 26;
+export const HP_BAR_RADIUS = 13;
 export const HP_BAR_PADDING = 3;
 export const COLOR_HP_HEART = 0xe74c3c;
 export const COLOR_HP_HEART_SHINE = 0xf1948a;
+
+// HP gauge visual (matches heart/character style: fill + gradient + outline + shine)
+export const HP_FRAME_BG = 0x1a1a2e;
+export const HP_FRAME_OUTLINE = 0x3d3d5c;
+export const HP_COLORS = {
+  high: { fill: 0x2ecc71, dark: 0x1fa85a, outline: 0x1b8a4a, shine: 0x58d68d },
+  mid:  { fill: 0xf39c12, dark: 0xd4850a, outline: 0xb37209, shine: 0xf5b041 },
+  low:  { fill: 0xe74c3c, dark: 0xc0392b, outline: 0x922b21, shine: 0xec7063 },
+};
+export const HP_SEGMENT_COLOR = 0x3d3d5c;
 export const HP_MAX_BOOST = 5000;          // 최대 체력 +5초
 export const HP_RESTORE_AMOUNT = 8000;     // 현재 체력 +8초
 export const HP_DECAY_STACK_BASE = 1.15;   // 감소 속도 스택당 15%

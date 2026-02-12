@@ -511,10 +511,8 @@ export class QuizManager {
   }
 
   private clearQuizItems(): void {
-    this.quizItems.getChildren().forEach((obj) => {
-      const item = obj as QuizItem;
-      item.destroyWithTrail();
-    });
+    const items = [...this.quizItems.getChildren()] as QuizItem[];
+    items.forEach((item) => item.destroyWithTrail());
     this.quizItems.clear(true);
   }
 
