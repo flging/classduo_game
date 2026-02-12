@@ -399,6 +399,43 @@ export class QuizManager {
 
   // ---- Preview markers ----
 
+  private drawWarningIcon(
+    g: Phaser.GameObjects.Graphics,
+    cx: number,
+    cy: number,
+    size: number
+  ): void {
+    const top = cy - size * 0.6;
+    const bot = cy + size * 0.5;
+    const half = size * 0.55;
+
+    // Red triangle fill
+    g.fillStyle(0xe74c3c, 1);
+    g.beginPath();
+    g.moveTo(cx, top);
+    g.lineTo(cx + half, bot);
+    g.lineTo(cx - half, bot);
+    g.closePath();
+    g.fillPath();
+
+    // Dark outline
+    g.lineStyle(2, 0x922b21, 1);
+    g.beginPath();
+    g.moveTo(cx, top);
+    g.lineTo(cx + half, bot);
+    g.lineTo(cx - half, bot);
+    g.closePath();
+    g.strokePath();
+
+    // White exclamation mark (line + dot)
+    const exTop = cy - size * 0.25;
+    const exBot = cy + size * 0.1;
+    g.lineStyle(3, 0xffffff, 1);
+    g.lineBetween(cx, exTop, cx, exBot);
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(cx, cy + size * 0.28, 2);
+  }
+
   private spawnPreviewMarkers(words: string[]): void {
     const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
     const lowY = groundTop - 25;
@@ -412,34 +449,28 @@ export class QuizManager {
 
       const container = this.scene.add.container(x, y).setDepth(5);
 
-      const s = QUIZ_ITEM_SIZE;
-      const bg = this.scene.add.graphics();
-      // Red warning triangle
-      bg.fillStyle(0xe74c3c, 0.5);
-      bg.beginPath();
-      bg.moveTo(0, -s * 0.55);
-      bg.lineTo(s * 0.5, s * 0.4);
-      bg.lineTo(-s * 0.5, s * 0.4);
-      bg.closePath();
-      bg.fillPath();
-      bg.lineStyle(2, 0xc0392b, 0.7);
-      bg.beginPath();
-      bg.moveTo(0, -s * 0.55);
-      bg.lineTo(s * 0.5, s * 0.4);
-      bg.lineTo(-s * 0.5, s * 0.4);
-      bg.closePath();
-      bg.strokePath();
-      container.add(bg);
-
       const text = this.scene.add
-        .text(0, 4, word, {
+        .text(0, 0, word, {
           fontFamily: "monospace",
-          fontSize: "14px",
+          fontSize: "15px",
           color: "#ffffff",
           fontStyle: "bold",
+          stroke: "#000000",
+          strokeThickness: 3,
         })
         .setOrigin(0.5);
       container.add(text);
+
+      const halfTextW = text.width / 2;
+      const triS = 18;
+      const gap = 6;
+
+      const icons = this.scene.add.graphics();
+      // Left warning triangle + exclamation
+      this.drawWarningIcon(icons, -(halfTextW + gap + triS * 0.5), 0, triS);
+      // Right warning triangle + exclamation
+      this.drawWarningIcon(icons, halfTextW + gap + triS * 0.5, 0, triS);
+      container.add(icons);
 
       this.scene.tweens.add({
         targets: container,
