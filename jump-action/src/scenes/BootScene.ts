@@ -75,9 +75,9 @@ export class BootScene extends Phaser.Scene {
     g.lineStyle(2, 0x922b21);
     g.lineBetween(seamX, seamTop, seamX, seamBot);
 
-    // "K" on right chest
-    const kx = bodyX + bodyW - 11;
-    const ky = bodyY + 26;
+    // "K" on right chest (right of seam)
+    const kx = seamX + 3;
+    const ky = bodyY + 24;
     const kh = 6;
     g.lineStyle(1.2, 0xffffff);
     g.lineBetween(kx, ky, kx, ky + kh);                 // vertical stroke
