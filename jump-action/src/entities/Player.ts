@@ -50,15 +50,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.trail = scene.add.graphics();
     this.trail.setDepth((this.depth ?? 0) - 1);
 
-    // Run animation (2-frame leg alternation)
+    // Run animation (4-frame leg alternation)
     if (!scene.anims.exists("run")) {
       scene.anims.create({
         key: "run",
         frames: [
           { key: "player_run0" },
           { key: "player_run1" },
+          { key: "player_run2" },
+          { key: "player_run3" },
         ],
-        frameRate: 8,
+        frameRate: 10,
         repeat: -1,
       });
     }
@@ -122,15 +124,23 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.isRunning = false;
       }
     } else if (onGround) {
-      if (!this.isRunning) {
+      if (this.ducking) {
+        if (this.texture.key !== "player_duck") {
+          this.stop();
+          this.setTexture("player_duck");
+          this.isRunning = false;
+        }
+      } else if (!this.isRunning) {
         this.play("run");
         this.isRunning = true;
       }
     } else {
-      // In the air (no spin) → jump frame with >< eyes
-      if (this.isRunning || this.texture.key !== "player_jump") {
+      // In the air: rising = jump frame, falling = fall frame
+      const vy = body.velocity.y;
+      const targetTex = vy > 50 ? "player_fall" : "player_jump";
+      if (this.isRunning || this.texture.key !== targetTex) {
         this.stop();
-        this.setTexture("player_jump");
+        this.setTexture(targetTex);
         this.isRunning = false;
       }
     }

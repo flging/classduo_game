@@ -3,7 +3,8 @@ import { GROUND_HEIGHT } from "../constants";
 
 export class GroundSegment extends Phaser.Physics.Arcade.Sprite {
   constructor(scene: Phaser.Scene, x: number, y: number, width: number) {
-    super(scene, x, y, "groundTile");
+    const texture = Math.random() < 0.5 ? "groundTile" : "groundTile2";
+    super(scene, x, y, texture);
 
     scene.add.existing(this);
     scene.physics.add.existing(this);

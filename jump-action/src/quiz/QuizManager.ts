@@ -42,6 +42,9 @@ export interface QuizCallbacks {
   setGameState: (state: GameState) => void;
   addScore: (amount: number) => void;
   showEffect: (text: string, color: string) => void;
+  onQuizCollect?: (x: number, y: number) => void;
+  onQuizAnnounce?: () => void;
+  onRewardSelect?: (isCorrect: boolean) => void;
 }
 
 interface CardDef {
@@ -87,17 +90,27 @@ export class QuizManager {
     if (!question) return;
 
     this.callbacks.setGameState("quiz_announce");
+    this.callbacks.onQuizAnnounce?.();
 
     this.bannerText = this.scene.add
-      .text(GAME_WIDTH / 2, 50, `먹으세요: ${question.correctAnswer}`, {
+      .text(GAME_WIDTH / 2, -30, `먹으세요: ${question.correctAnswer}`, {
         fontFamily: "monospace",
         fontSize: "22px",
         color: "#ffffff",
-        backgroundColor: "#2c3e50",
+        backgroundColor: "#1a1a2e",
         padding: { x: 16, y: 8 },
+        shadow: { offsetX: 1, offsetY: 1, color: "#000000", blur: 4, fill: true },
       })
       .setOrigin(0.5)
       .setDepth(10);
+
+    // Slide-in from top
+    this.scene.tweens.add({
+      targets: this.bannerText,
+      y: 50,
+      duration: 300,
+      ease: "Back.Out",
+    });
 
     const allWords = Phaser.Utils.Array.Shuffle([
       question.correctAnswer,
@@ -129,6 +142,8 @@ export class QuizManager {
       this.timeoutTimer.remove();
       this.timeoutTimer = null;
     }
+
+    this.callbacks.onQuizCollect?.(item.x, item.y);
 
     this.clearQuizItems();
     this.clearBanner();
@@ -259,12 +274,21 @@ export class QuizManager {
       .setDepth(21);
     this.rewardUI.push(title);
 
-    // Cards
+    // Cards (enter from bottom with stagger)
     selected.forEach((card, i) => {
       const cx = startX + cardW / 2 + i * (cardW + gap);
       const cy = cardY + cardH / 2;
 
-      const container = this.scene.add.container(cx, cy).setDepth(21);
+      const container = this.scene.add.container(cx, GAME_HEIGHT + cardH).setDepth(21);
+
+      // Entrance animation: slide up from bottom with stagger
+      this.scene.tweens.add({
+        targets: container,
+        y: cy,
+        duration: 400,
+        delay: i * 100,
+        ease: "Back.Out",
+      });
 
       // Background
       const bg = this.scene.add.graphics();
@@ -323,6 +347,7 @@ export class QuizManager {
   }
 
   private selectReward(type: ChoiceType, isCorrect: boolean): void {
+    this.callbacks.onRewardSelect?.(isCorrect);
     this.clearRewardUI();
     this.scene.physics.resume();
 

@@ -27,7 +27,7 @@ export const GROUND_TILE_WIDTH = 200;
 export const GROUND_SEGMENT_MIN = 2;
 export const GROUND_SEGMENT_MAX = 4;
 export const GAP_WIDTH_MIN = 100;
-export const GAP_WIDTH_MAX = 200;
+export const GAP_WIDTH_MAX = 150;
 export const GAP_PROBABILITY = 0.3;
 export const SCROLL_SPEED_INITIAL = -250;
 export const SCROLL_SPEED_MAX = -500;
@@ -104,3 +104,76 @@ export const COLOR_GROUND_TOP = 0x6b8e23;
 export const TRAIL_LENGTH = 8;
 export const DUST_PARTICLE_COUNT = 6;
 export const JUMP_BURST_COUNT = 4;
+
+// ── Screen FX ──
+export const SHAKE_FALL_DEATH = { intensity: 0.015, duration: 300 };
+export const SHAKE_HP_DEATH = { intensity: 0.008, duration: 200 };
+export const SHAKE_WRONG_COLLECT = { intensity: 0.005, duration: 150 };
+export const SHAKE_QUIZ_COLLECT = { intensity: 0.008, duration: 100 };
+export const SHAKE_HIGH_LAND = { intensity: 0.003, duration: 100 };
+
+export const FREEZE_QUIZ_COLLECT = 60;
+export const FREEZE_DEATH = 100;
+export const FREEZE_WRONG = 40;
+
+export const FLASH_CORRECT = { r: 255, g: 255, b: 255, duration: 200 };
+export const FLASH_WRONG = { r: 200, g: 50, b: 50, duration: 150 };
+export const FLASH_HP_LOW = { r: 200, g: 50, b: 50, duration: 100 };
+export const FLASH_COIN_STREAK = { r: 240, g: 200, b: 50, duration: 100 };
+export const COIN_STREAK_THRESHOLD = 10;
+
+export const ZOOM_PUNCH_QUIZ = { scale: 1.03, duration: 200 };
+export const ZOOM_PUNCH_REWARD = { scale: 1.05, duration: 100 };
+
+// ── Particle pool ──
+export const PARTICLE_POOL_SIZE = 40;
+export const COIN_BURST_COUNT = 8;
+export const QUIZ_BURST_COUNT = 12;
+export const DEATH_BURST_COUNT = 20;
+export const SPEED_LINE_COUNT = 3;
+export const AMBIENT_DUST_COUNT = 12;
+export const SPEED_LINE_THRESHOLD = 1.5;
+
+// ── Depth layers ──
+export const DEPTH_SKY = -10;
+export const DEPTH_SKY_TINT = -9;
+export const DEPTH_PARALLAX_FAR = -3;
+export const DEPTH_PARALLAX_MID = -2;
+export const DEPTH_PARALLAX_NEAR = -1;
+export const DEPTH_AMBIENT = 0.5;
+export const DEPTH_ENTITIES = 1;
+export const DEPTH_SPEED_LINES = 1.5;
+export const DEPTH_HUD = 5;
+export const DEPTH_QUIZ = 10;
+export const DEPTH_OVERLAY = 20;
+
+// ── Parallax mountain colors ──
+export const COLOR_MOUNTAIN_FAR = 0xc8d8e8;
+export const COLOR_MOUNTAIN_MID = 0x9bb0c8;
+export const COLOR_MOUNTAIN_NEAR = 0x7a96b0;
+
+// ── Sky gradient ──
+export const SKY_TOP_COLOR = { r: 0x5b, g: 0x86, b: 0xc7 };
+export const SKY_MID_COLOR = { r: 0xa8, g: 0xce, b: 0xef };
+export const SKY_BOT_COLOR = { r: 0xf5, g: 0xe6, b: 0xca };
+
+// ── Distance-based sky tinting ──
+export const SKY_TINT_STAGES = [
+  { dist: 0, color: 0xffffff },
+  { dist: 2000, color: 0xfff8e8 },
+  { dist: 5000, color: 0xffe0b0 },
+  { dist: 10000, color: 0xffb070 },
+];
+
+// ── HP gauge animation ──
+export const HP_LOW_THRESHOLD = 0.25;
+export const HP_HEARTBEAT_DURATION = 400;
+export const HP_LERP_SPEED = 3;
+export const HP_DAMAGE_FLASH_MS = 100;
+
+// ── Score popup ──
+export const SCORE_POPUP_DURATION = 600;
+export const SCORE_POPUP_RISE = 30;
+export const SCORE_BOUNCE_SCALE = 1.3;
+export const SCORE_BOUNCE_DURATION = 200;
+export const SCORE_LERP_SPEED = 200;

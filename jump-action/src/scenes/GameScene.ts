@@ -4,11 +4,14 @@ import { GroundSegment } from "../entities/GroundSegment";
 import { Coin } from "../entities/Coin";
 import { QuizItem } from "../entities/QuizItem";
 import { QuizManager, GameState } from "../quiz/QuizManager";
+import { ScreenFXManager } from "../systems/ScreenFXManager";
+import { ParticleManager } from "../systems/ParticleManager";
+import { CameraManager } from "../systems/CameraManager";
+import { UIManager } from "../systems/UIManager";
 import {
   GAME_WIDTH,
   GAME_HEIGHT,
   PLAYER_X,
-  PLAYER_SIZE,
   PLAYER_TEX_HEIGHT,
   GROUND_Y,
   GROUND_HEIGHT,
@@ -28,7 +31,6 @@ import {
   COIN_HIGH_Y,
   QUIZ_INTERVAL_MS,
   FALL_DEATH_Y,
-  HIT_FREEZE_DURATION,
   MAX_JUMPS,
   SPEED_STACK_BASE,
   JUMP_STACK_BASE,
@@ -39,24 +41,20 @@ import {
   JUMP_COUNT_MIN,
   JUMP_COUNT_MAX,
   HP_MAX,
-  HP_ICON_RADIUS,
-  HP_BAR_X,
-  HP_BAR_Y,
-  HP_BAR_WIDTH,
-  HP_BAR_HEIGHT,
-  HP_BAR_RADIUS,
-  HP_BAR_PADDING,
-  COLOR_HP_HEART,
-  COLOR_HP_HEART_SHINE,
   HP_RESTORE_AMOUNT,
   HP_DECAY_STACK_BASE,
   HP_DECAY_MULT_MIN,
   HP_DECAY_MULT_MAX,
-  EFFECT_DISPLAY_MS,
-  DUST_PARTICLE_COUNT,
-  JUMP_BURST_COUNT,
-  COLOR_GROUND,
-  COLOR_PLAYER,
+  SPEED_LINE_THRESHOLD,
+  SHAKE_FALL_DEATH,
+  SHAKE_HP_DEATH,
+  SHAKE_WRONG_COLLECT,
+  SHAKE_QUIZ_COLLECT,
+  FREEZE_DEATH,
+  FLASH_CORRECT,
+  FLASH_WRONG,
+  ZOOM_PUNCH_QUIZ,
+  ZOOM_PUNCH_REWARD,
 } from "../constants";
 
 export class GameScene extends Phaser.Scene {
@@ -66,9 +64,6 @@ export class GameScene extends Phaser.Scene {
   private quizItems!: Phaser.Physics.Arcade.Group;
 
   private score = 0;
-  private scoreText!: Phaser.GameObjects.Text;
-  private effectText!: Phaser.GameObjects.Text;
-
   private baseScrollSpeed = SCROLL_SPEED_INITIAL;
   private scrollSpeedMultiplier = 1;
   private gameState: GameState = "playing";
@@ -85,19 +80,46 @@ export class GameScene extends Phaser.Scene {
   private hpMax = HP_MAX;
   private hpDecayStacks = 0;
   private hpDecayMultiplier = 1;
-  private hpGaugeFrame!: Phaser.GameObjects.Graphics;
-  private hpGaugeFill!: Phaser.GameObjects.Graphics;
 
-  private mountainLayer!: Phaser.GameObjects.TileSprite;
   private quizManager!: QuizManager;
-  private effectDisplayTimer?: Phaser.Time.TimerEvent;
   private lastSlideDustTime = 0;
+  private lastHpFlashTime = 0;
+
+  // Managers
+  private screenFX!: ScreenFXManager;
+  private particles!: ParticleManager;
+  private cameraManager!: CameraManager;
+  private ui!: UIManager;
 
   constructor() {
     super({ key: "GameScene" });
   }
 
   create(): void {
+    this.resetState();
+    this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT + 200);
+
+    // Create managers
+    this.screenFX = new ScreenFXManager(this);
+    this.particles = new ParticleManager(this);
+    this.cameraManager = new CameraManager(this);
+    this.ui = new UIManager(this);
+
+    this.cameraManager.create();
+    this.ui.create();
+
+    this.createGroups();
+    this.createPlayer();
+    this.setupCollisions();
+    this.setupInput();
+    this.createQuizManager();
+    this.fillInitialGround();
+
+    // Fade in
+    this.cameras.main.fadeIn(400);
+  }
+
+  private resetState(): void {
     this.score = 0;
     this.baseScrollSpeed = SCROLL_SPEED_INITIAL;
     this.scrollSpeedMultiplier = 1;
@@ -114,27 +136,7 @@ export class GameScene extends Phaser.Scene {
     this.hpDecayStacks = 0;
     this.hpDecayMultiplier = 1;
     this.lastSlideDustTime = 0;
-
-    // Extend world bounds downward for fall death
-    this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT + 200);
-
-    // Parallax mountain background (extends below ground so it shows through gaps)
-    const mountainPeakH = 120;
-    const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
-    const mountainTop = groundTop - mountainPeakH;
-    const mountainSpriteH = GAME_HEIGHT - mountainTop;
-    this.mountainLayer = this.add
-      .tileSprite(0, mountainTop, GAME_WIDTH, mountainSpriteH, "mountains_far")
-      .setOrigin(0, 0)
-      .setDepth(0);
-
-    this.createGroups();
-    this.createPlayer();
-    this.createUI();
-    this.setupCollisions();
-    this.setupInput();
-    this.createQuizManager();
-    this.fillInitialGround();
+    this.lastHpFlashTime = 0;
   }
 
   private createGroups(): void {
@@ -156,78 +158,35 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createPlayer(): void {
-    // Texture: 40×52, origin (0.5,0.5) → center at y, top at y-26
-    // Body: offset(5,2), size(30,38) → body bottom at y - 26 + 2 + 38 = y + 14
-    // Ground surface: groundTop. We want body bottom = groundTop → y = groundTop - 14
     const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
-    const bodyBottomFromCenter = -PLAYER_TEX_HEIGHT / 2 + 5 + 38; // 15
+    const bodyBottomFromCenter = -PLAYER_TEX_HEIGHT / 2 + 5 + 38;
     const playerY = groundTop - bodyBottomFromCenter;
-    this.player = new Player(this, PLAYER_X, playerY);
 
-    this.player.on('land', this.spawnDustEffect, this);
-    this.player.on('jump', this.spawnJumpBurst, this);
+    // Start offscreen for run-in effect
+    this.player = new Player(this, -50, playerY);
+    this.tweens.add({
+      targets: this.player,
+      x: PLAYER_X,
+      duration: 400,
+      ease: "Power2",
+    });
+
+    this.player.on("land", this.onPlayerLand, this);
+    this.player.on("jump", this.onPlayerJump, this);
   }
 
-  private createUI(): void {
-    this.scoreText = this.add
-      .text(GAME_WIDTH - 20, 20, "0", {
-        fontFamily: "monospace",
-        fontSize: "28px",
-        color: "#333333",
-        fontStyle: "bold",
-      })
-      .setOrigin(1, 0)
-      .setDepth(5);
+  private onPlayerLand = (x: number, _y: number): void => {
+    this.particles.spawnDustEffect(x);
+  };
 
-    this.add
-      .text(GAME_WIDTH - 80, 22, "COIN", {
-        fontFamily: "monospace",
-        fontSize: "14px",
-        color: "#d4a017",
-        fontStyle: "bold",
-      })
-      .setOrigin(1, 0)
-      .setDepth(5);
-
-    // HP gauge
-    this.hpGaugeFrame = this.add.graphics().setDepth(5);
-    this.drawHpGaugeFrame();
-
-    this.hpGaugeFill = this.add.graphics().setDepth(5);
-    this.updateHpGauge();
-
-    this.effectText = this.add
-      .text(GAME_WIDTH / 2, 20, "", {
-        fontFamily: "monospace",
-        fontSize: "16px",
-        color: "#ffffff",
-        fontStyle: "bold",
-        backgroundColor: "#00000066",
-        padding: { x: 8, y: 4 },
-      })
-      .setOrigin(0.5, 0)
-      .setDepth(10)
-      .setAlpha(0);
-  }
+  private onPlayerJump = (x: number, y: number, jumpCount: number): void => {
+    this.particles.spawnJumpBurst(x, y, jumpCount);
+  };
 
   private setupCollisions(): void {
     this.physics.add.collider(this.player, this.grounds);
-
-    this.physics.add.overlap(
-      this.player,
-      this.coins,
-      this.onCollectCoin,
-      undefined,
-      this
-    );
-
-    this.physics.add.overlap(
-      this.player,
-      this.quizItems,
-      this.onCollectQuizItem,
-      undefined,
-      this
-    );
+    this.physics.add.overlap(this.player, this.coins, this.onCollectCoin, undefined, this);
+    this.physics.add.overlap(this.player, this.quizItems, this.onCollectQuizItem, undefined, this);
   }
 
   private setupInput(): void {
@@ -261,9 +220,27 @@ export class GameScene extends Phaser.Scene {
       },
       addScore: (amount: number) => {
         this.score = Math.max(0, this.score + amount);
-        this.scoreText.setText(String(this.score));
+        this.ui.setScore(this.score);
       },
-      showEffect: (text: string, color: string) => this.showEffect(text, color),
+      showEffect: (text: string, color: string) => this.ui.showEffect(text, color),
+      onQuizCollect: (x: number, y: number) => {
+        // Same effect for both correct and wrong — no spoiler
+        this.screenFX.shake(SHAKE_QUIZ_COLLECT);
+        this.screenFX.flash(FLASH_CORRECT);
+        this.particles.spawnQuizFlash(x, y);
+      },
+      onQuizAnnounce: () => {
+        this.screenFX.zoomPunch(ZOOM_PUNCH_QUIZ);
+      },
+      onRewardSelect: (isCorrect: boolean) => {
+        if (isCorrect) {
+          this.screenFX.zoomPunch(ZOOM_PUNCH_REWARD);
+        } else {
+          // Wrong answer revealed — impact effect
+          this.screenFX.shake(SHAKE_WRONG_COLLECT);
+          this.screenFX.flash(FLASH_WRONG);
+        }
+      },
     });
   }
 
@@ -287,14 +264,11 @@ export class GameScene extends Phaser.Scene {
     this.player.endDuck();
   };
 
-  // ---- Ground spawning ----
+  // ── Ground spawning ──
 
   private fillInitialGround(): void {
     while (this.nextGroundX < GAME_WIDTH + GROUND_TILE_WIDTH) {
-      const tileCount = Phaser.Math.Between(
-        GROUND_SEGMENT_MIN,
-        GROUND_SEGMENT_MAX
-      );
+      const tileCount = Phaser.Math.Between(GROUND_SEGMENT_MIN, GROUND_SEGMENT_MAX);
       const width = tileCount * GROUND_TILE_WIDTH;
       this.spawnGroundSegment(this.nextGroundX + width / 2, width);
       this.spawnGroundCoins(this.nextGroundX, width);
@@ -310,21 +284,16 @@ export class GameScene extends Phaser.Scene {
 
   private spawnNewGround(): void {
     while (this.nextGroundX < GAME_WIDTH + GROUND_TILE_WIDTH * 2) {
-      // Maybe insert a gap
       if (this.distanceTraveled > 800 && Math.random() < GAP_PROBABILITY) {
         const gapWidth = Phaser.Math.Between(GAP_WIDTH_MIN, GAP_WIDTH_MAX);
         this.spawnArcCoins(this.nextGroundX, gapWidth);
         this.nextGroundX += gapWidth;
       }
 
-      const tileCount = Phaser.Math.Between(
-        GROUND_SEGMENT_MIN,
-        GROUND_SEGMENT_MAX
-      );
+      const tileCount = Phaser.Math.Between(GROUND_SEGMENT_MIN, GROUND_SEGMENT_MAX);
       const width = tileCount * GROUND_TILE_WIDTH;
       this.spawnGroundSegment(this.nextGroundX + width / 2, width);
 
-      // Coin patterns
       const pattern = Math.random();
       if (pattern < 0.5) {
         this.spawnGroundCoins(this.nextGroundX, width);
@@ -332,24 +301,20 @@ export class GameScene extends Phaser.Scene {
         this.spawnHighCoins(this.nextGroundX, width);
       } else {
         this.spawnGroundCoins(this.nextGroundX, width);
-        this.spawnHighCoins(
-          this.nextGroundX + COIN_LINE_SPACING * 2,
-          width / 2
-        );
+        this.spawnHighCoins(this.nextGroundX + COIN_LINE_SPACING * 2, width / 2);
       }
 
       this.nextGroundX += width;
     }
   }
 
-  // ---- Coin spawning ----
+  // ── Coin spawning ──
 
   private spawnGroundCoins(startX: number, segWidth: number): void {
     const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
     const y = groundTop + COIN_GROUND_Y_OFFSET;
     const count = Math.floor(segWidth / COIN_LINE_SPACING);
     const speed = this.getEffectiveSpeed();
-
     for (let i = 0; i < count; i++) {
       const x = startX + COIN_LINE_SPACING / 2 + i * COIN_LINE_SPACING;
       const coin = new Coin(this, x, y);
@@ -362,7 +327,6 @@ export class GameScene extends Phaser.Scene {
     const y = COIN_HIGH_Y;
     const count = Math.min(5, Math.floor(segWidth / COIN_LINE_SPACING));
     const speed = this.getEffectiveSpeed();
-
     for (let i = 0; i < count; i++) {
       const x = startX + COIN_LINE_SPACING / 2 + i * COIN_LINE_SPACING;
       const coin = new Coin(this, x, y);
@@ -374,31 +338,35 @@ export class GameScene extends Phaser.Scene {
   private spawnArcCoins(gapStartX: number, gapWidth: number): void {
     const speed = this.getEffectiveSpeed();
     const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
-
     for (let i = 0; i < COIN_ARC_COUNT; i++) {
       const t = i / (COIN_ARC_COUNT - 1);
       const x = gapStartX + gapWidth * t;
       const arcHeight = 120;
       const y = groundTop - 30 - arcHeight * 4 * t * (1 - t);
-
       const coin = new Coin(this, x, y);
       this.coins.add(coin);
       coin.setScrollSpeed(speed);
     }
   }
 
-  // ---- Coin collection ----
+  // ── Coin collection ──
 
   private onCollectCoin: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (
     _player,
     coinObj
   ): void => {
     const coin = coinObj as Coin;
+    const cx = coin.x;
+    const cy = coin.y;
     coin.destroy();
 
     this.score++;
     this.totalCoinsCollected++;
-    this.scoreText.setText(String(this.score));
+    this.ui.setScore(this.score);
+
+    // Coin burst particles + popup
+    this.particles.spawnCoinBurst(cx, cy);
+    this.particles.spawnScorePopup(cx, cy - 10, "+1", "#f1c40f");
 
     // Speed increase
     if (this.totalCoinsCollected % SPEED_UP_COIN_INTERVAL === 0) {
@@ -409,7 +377,7 @@ export class GameScene extends Phaser.Scene {
     }
   };
 
-  // ---- Quiz item collection ----
+  // ── Quiz item collection ──
 
   private onCollectQuizItem: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (
     _player,
@@ -420,7 +388,7 @@ export class GameScene extends Phaser.Scene {
     this.quizManager.handleCollection(item);
   };
 
-  // ---- Buff / Debuff ----
+  // ── Buff / Debuff ──
 
   private getEffectiveSpeed(): number {
     return this.baseScrollSpeed * this.scrollSpeedMultiplier;
@@ -430,8 +398,7 @@ export class GameScene extends Phaser.Scene {
     this.speedStacks++;
     this.scrollSpeedMultiplier = Phaser.Math.Clamp(
       Math.pow(SPEED_STACK_BASE, this.speedStacks),
-      SPEED_MULT_MIN,
-      SPEED_MULT_MAX
+      SPEED_MULT_MIN, SPEED_MULT_MAX
     );
   }
 
@@ -439,8 +406,7 @@ export class GameScene extends Phaser.Scene {
     this.speedStacks--;
     this.scrollSpeedMultiplier = Phaser.Math.Clamp(
       Math.pow(SPEED_STACK_BASE, this.speedStacks),
-      SPEED_MULT_MIN,
-      SPEED_MULT_MAX
+      SPEED_MULT_MIN, SPEED_MULT_MAX
     );
   }
 
@@ -448,8 +414,7 @@ export class GameScene extends Phaser.Scene {
     this.jumpStacks++;
     this.player.jumpMultiplier = Phaser.Math.Clamp(
       Math.pow(JUMP_STACK_BASE, this.jumpStacks),
-      JUMP_MULT_MIN,
-      JUMP_MULT_MAX
+      JUMP_MULT_MIN, JUMP_MULT_MAX
     );
   }
 
@@ -457,8 +422,7 @@ export class GameScene extends Phaser.Scene {
     this.jumpStacks--;
     this.player.jumpMultiplier = Phaser.Math.Clamp(
       Math.pow(JUMP_STACK_BASE, this.jumpStacks),
-      JUMP_MULT_MIN,
-      JUMP_MULT_MAX
+      JUMP_MULT_MIN, JUMP_MULT_MAX
     );
   }
 
@@ -466,8 +430,7 @@ export class GameScene extends Phaser.Scene {
     this.jumpCountStacks++;
     this.player.maxJumps = Phaser.Math.Clamp(
       MAX_JUMPS + this.jumpCountStacks,
-      JUMP_COUNT_MIN,
-      JUMP_COUNT_MAX
+      JUMP_COUNT_MIN, JUMP_COUNT_MAX
     );
   }
 
@@ -475,8 +438,7 @@ export class GameScene extends Phaser.Scene {
     this.jumpCountStacks--;
     this.player.maxJumps = Phaser.Math.Clamp(
       MAX_JUMPS + this.jumpCountStacks,
-      JUMP_COUNT_MIN,
-      JUMP_COUNT_MAX
+      JUMP_COUNT_MIN, JUMP_COUNT_MAX
     );
   }
 
@@ -492,8 +454,7 @@ export class GameScene extends Phaser.Scene {
     this.hpDecayStacks--;
     this.hpDecayMultiplier = Phaser.Math.Clamp(
       Math.pow(HP_DECAY_STACK_BASE, this.hpDecayStacks),
-      HP_DECAY_MULT_MIN,
-      HP_DECAY_MULT_MAX
+      HP_DECAY_MULT_MIN, HP_DECAY_MULT_MAX
     );
   }
 
@@ -501,222 +462,14 @@ export class GameScene extends Phaser.Scene {
     this.hpDecayStacks++;
     this.hpDecayMultiplier = Phaser.Math.Clamp(
       Math.pow(HP_DECAY_STACK_BASE, this.hpDecayStacks),
-      HP_DECAY_MULT_MIN,
-      HP_DECAY_MULT_MAX
+      HP_DECAY_MULT_MIN, HP_DECAY_MULT_MAX
     );
   }
 
-  private showEffect(text: string, color: string): void {
-    this.effectText.setText(text).setColor(color).setAlpha(1);
-    this.effectDisplayTimer?.remove();
-    this.effectDisplayTimer = this.time.delayedCall(EFFECT_DISPLAY_MS, () => {
-      this.effectText.setAlpha(0);
-    });
-  }
-
-  // ---- HP gauge ----
-
-  private drawHeartIcon(
-    g: Phaser.GameObjects.Graphics,
-    cx: number,
-    cy: number,
-    r: number
-  ): void {
-    const topY = cy - r * 0.4;
-    const botY = cy + r;
-    const lx = cx - r * 0.55;
-    const rx = cx + r * 0.55;
-    const bulgeR = r * 0.55;
-
-    g.fillStyle(COLOR_HP_HEART, 1);
-    g.beginPath();
-    // Left bulge
-    g.arc(lx, topY, bulgeR, Math.PI, 0, false);
-    // Right bulge
-    g.arc(rx, topY, bulgeR, Math.PI, 0, false);
-    // Bottom point
-    g.lineTo(cx, botY);
-    g.closePath();
-    g.fillPath();
-
-    // Outline
-    g.lineStyle(2, 0x922b21, 1);
-    g.beginPath();
-    g.arc(lx, topY, bulgeR, Math.PI, 0, false);
-    g.arc(rx, topY, bulgeR, Math.PI, 0, false);
-    g.lineTo(cx, botY);
-    g.closePath();
-    g.strokePath();
-
-    // Shine highlight
-    g.fillStyle(COLOR_HP_HEART_SHINE, 0.6);
-    g.fillCircle(lx - bulgeR * 0.15, topY - bulgeR * 0.2, bulgeR * 0.3);
-  }
-
-  private getHpBarWidth(): number {
-    return HP_BAR_WIDTH;
-  }
-
-  private drawHpGaugeFrame(): void {
-    const g = this.hpGaugeFrame;
-    g.clear();
-
-    const iconCx = HP_ICON_RADIUS + 4;
-    const iconCy = HP_BAR_Y + HP_BAR_HEIGHT / 2;
-    const r = HP_ICON_RADIUS;
-
-    // Heart icon
-    this.drawHeartIcon(g, iconCx, iconCy, r);
-
-    // Bar frame: dark rounded rect background
-    const barW = this.getHpBarWidth();
-    g.fillStyle(0x1a1a2e, 1);
-    g.fillRoundedRect(
-      HP_BAR_X, HP_BAR_Y,
-      barW, HP_BAR_HEIGHT,
-      HP_BAR_RADIUS
-    );
-
-    // Inner border highlight
-    g.lineStyle(2, 0x3d3d5c, 1);
-    g.strokeRoundedRect(
-      HP_BAR_X, HP_BAR_Y,
-      barW, HP_BAR_HEIGHT,
-      HP_BAR_RADIUS
-    );
-  }
-
-  private updateHpGauge(): void {
-    const ratio = this.hp / this.hpMax;
-    const barW = this.getHpBarWidth();
-    const pad = HP_BAR_PADDING;
-    const innerW = barW - pad * 2;
-    const innerH = HP_BAR_HEIGHT - pad * 2;
-    const innerR = HP_BAR_RADIUS - pad;
-    const fillW = Math.max(0, innerW * ratio);
-
-    let color: number;
-    let shineColor: number;
-    if (ratio > 0.5) {
-      color = 0x2ecc71;
-      shineColor = 0x58d68d;
-    } else if (ratio > 0.25) {
-      color = 0xf39c12;
-      shineColor = 0xf5b041;
-    } else {
-      color = 0xe74c3c;
-      shineColor = 0xec7063;
-    }
-
-    const g = this.hpGaugeFill;
-    g.clear();
-
-    if (fillW <= 0) return;
-
-    const fx = HP_BAR_X + pad;
-    const fy = HP_BAR_Y + pad;
-
-    // Main fill
-    g.fillStyle(color, 1);
-    g.fillRoundedRect(fx, fy, fillW, innerH, {
-      tl: innerR,
-      tr: fillW >= innerW - innerR ? innerR : 0,
-      bl: innerR,
-      br: fillW >= innerW - innerR ? innerR : 0,
-    });
-
-    // Shine highlight (upper half)
-    g.fillStyle(shineColor, 0.4);
-    g.fillRoundedRect(fx, fy, fillW, innerH / 2, {
-      tl: innerR,
-      tr: fillW >= innerW - innerR ? innerR : 0,
-      bl: 0,
-      br: 0,
-    });
-  }
-
-  // ---- Particle effects ----
-
-  private spawnDustEffect(x: number, _y: number): void {
-    const footY = GROUND_Y - GROUND_HEIGHT / 2;
-
-    for (let i = 0; i < DUST_PARTICLE_COUNT; i++) {
-      const g = this.add.graphics();
-      g.setDepth(1);
-      const size = Phaser.Math.Between(2, 4);
-      g.fillStyle(COLOR_GROUND, 0.7);
-      g.fillCircle(0, 0, size);
-      g.setPosition(x, footY);
-
-      this.tweens.add({
-        targets: g,
-        x: x + Phaser.Math.Between(-30, 30),
-        y: footY + Phaser.Math.Between(-18, -6),
-        alpha: 0,
-        duration: 500,
-        ease: 'Power2',
-        onComplete: () => g.destroy(),
-      });
-    }
-  }
-
-  private spawnSlideDust(): void {
-    const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
-    const x = this.player.x - 5;
-    const y = groundTop;
-
-    for (let i = 0; i < 5; i++) {
-      const g = this.add.graphics();
-      g.setDepth(1);
-      const size = Phaser.Math.Between(1, 4);
-      g.fillStyle(COLOR_GROUND, 0.6);
-      g.fillCircle(0, 0, size);
-      g.setPosition(
-        x + Phaser.Math.Between(-12, 12),
-        y + Phaser.Math.Between(-5, 3)
-      );
-
-      this.tweens.add({
-        targets: g,
-        x: g.x - Phaser.Math.Between(25, 50),
-        y: g.y - Phaser.Math.Between(5, 20),
-        alpha: 0,
-        duration: 400,
-        ease: 'Power2',
-        onComplete: () => g.destroy(),
-      });
-    }
-  }
-
-  private spawnJumpBurst(x: number, y: number, jumpCount: number): void {
-    if (jumpCount < 2) return;
-    const footY = y + PLAYER_TEX_HEIGHT / 4;
-
-    for (let i = 0; i < JUMP_BURST_COUNT; i++) {
-      const g = this.add.graphics();
-      g.setDepth(1);
-      const size = Phaser.Math.Between(1, 3);
-      g.fillStyle(COLOR_PLAYER, 0.5);
-      g.fillCircle(0, 0, size);
-      g.setPosition(x, footY);
-
-      this.tweens.add({
-        targets: g,
-        x: x + Phaser.Math.Between(-20, 20),
-        y: footY + Phaser.Math.Between(10, 25),
-        alpha: 0,
-        duration: 400,
-        ease: 'Power2',
-        onComplete: () => g.destroy(),
-      });
-    }
-  }
-
-  // ---- Sync scroll speed to all entities ----
+  // ── Sync scroll speed ──
 
   private syncScrollSpeed(): void {
     const speed = this.getEffectiveSpeed();
-
     this.grounds.getChildren().forEach((obj) => {
       (obj as GroundSegment).setScrollSpeed(speed);
     });
@@ -728,26 +481,28 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  // ---- Main update loop ----
+  // ── Main update ──
 
   update(time: number, delta: number): void {
     if (this.gameState === "game_over" || this.gameState === "choosing_reward")
       return;
 
-    // Parallax mountain scroll (slower than ground)
-    this.mountainLayer.tilePositionX -= this.getEffectiveSpeed() * 0.15 * (delta / 1000);
+    // Camera / parallax
+    this.cameraManager.update(this.getEffectiveSpeed(), delta, this.distanceTraveled);
 
-    // HP gauge
+    // HP decay
     this.hp -= delta * this.hpDecayMultiplier;
     if (this.hp <= 0) {
       this.hp = 0;
-      this.updateHpGauge();
-      this.triggerGameOver('hp');
+      this.ui.updateHpGauge(this.hp, this.hpMax);
+      this.triggerGameOver("hp");
       return;
     }
-    this.updateHpGauge();
+    this.ui.updateHpGauge(this.hp, this.hpMax);
 
-    // Quiz timer (only ticks during playing)
+    // (Low HP warning removed — no red flash)
+
+    // Quiz timer
     if (this.gameState === "playing") {
       this.quizTimer += delta;
       if (this.quizTimer >= QUIZ_INTERVAL_MS) {
@@ -758,40 +513,56 @@ export class GameScene extends Phaser.Scene {
 
     this.player.update(time, delta);
 
-    // Slide dust particles
+    // Slide dust
     const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
     if (this.player.isDucking && playerBody.blocked.down) {
-      if (time - this.lastSlideDustTime > 80) {
+      if (time - this.lastSlideDustTime > 50) {
         this.lastSlideDustTime = time;
-        this.spawnSlideDust();
+        this.particles.spawnSlideDust(this.player.x + 25);
       }
+    }
+
+    // Speed lines when going fast
+    if (this.scrollSpeedMultiplier >= SPEED_LINE_THRESHOLD) {
+      this.particles.spawnSpeedLines();
     }
 
     const scrollDelta = Math.abs(this.getEffectiveSpeed()) * (delta / 1000);
     this.distanceTraveled += scrollDelta;
-
-    // Advance nextGroundX with scroll
     this.nextGroundX += this.getEffectiveSpeed() * (delta / 1000);
 
     this.spawnNewGround();
     this.syncScrollSpeed();
 
+    // Particle & UI update
+    this.particles.update(delta);
+    this.ui.update(delta);
+
     // Fall death
     if (this.player.y > FALL_DEATH_Y) {
-      this.triggerGameOver('fall');
+      this.triggerGameOver("fall");
     }
   }
 
-  private triggerGameOver(cause: 'hp' | 'fall'): void {
+  private triggerGameOver(cause: "hp" | "fall"): void {
     if (this.gameState === "game_over") return;
     this.gameState = "game_over";
 
-    if (cause === 'fall') {
-      this.cameras.main.shake(200, 0.01);
+    // Death effects
+    if (cause === "fall") {
+      this.screenFX.shake(SHAKE_FALL_DEATH);
+      this.particles.spawnDeathExplosion(this.player.x, this.player.y);
+    } else {
+      this.screenFX.shake(SHAKE_HP_DEATH);
+      this.particles.spawnDeathExplosion(this.player.x, this.player.y);
     }
 
+    this.screenFX.freeze(FREEZE_DEATH, () => {
+      this.finishGameOver(cause);
+    });
+
     this.quizManager.cleanup();
-    this.effectDisplayTimer?.remove();
+    this.ui.cleanup();
 
     this.grounds.getChildren().forEach((obj) => {
       (obj as GroundSegment).setVelocityX(0);
@@ -804,26 +575,34 @@ export class GameScene extends Phaser.Scene {
     this.player.stop();
     this.player.setTexture("player_dead");
     this.player.setAngle(0);
+  }
 
-    if (cause === 'hp') {
-      // Collapse animation: tilt sideways and sink slightly
+  private finishGameOver(cause: "hp" | "fall"): void {
+    if (cause === "hp") {
       this.player.setTint(0xcccccc);
       this.tweens.add({
         targets: this.player,
         angle: 90,
         y: this.player.y + 10,
         duration: 500,
-        ease: 'Power2',
+        ease: "Power2",
         onComplete: () => {
-          this.time.delayedCall(800, () => {
-            this.scene.start("GameOverScene", { score: this.score });
+          // Slow zoom + darken transition
+          this.cameras.main.zoomTo(1.1, 800);
+          this.cameras.main.fadeOut(800, 0, 0, 0, (_cam: Phaser.Cameras.Scene2D.Camera, progress: number) => {
+            if (progress === 1) {
+              this.scene.start("GameOverScene", { score: this.score });
+            }
           });
         },
       });
     } else {
       this.player.setTint(0xff0000);
-      this.time.delayedCall(HIT_FREEZE_DURATION, () => {
-        this.scene.start("GameOverScene", { score: this.score });
+      this.cameras.main.zoomTo(1.1, 600);
+      this.cameras.main.fadeOut(600, 0, 0, 0, (_cam: Phaser.Cameras.Scene2D.Camera, progress: number) => {
+        if (progress === 1) {
+          this.scene.start("GameOverScene", { score: this.score });
+        }
       });
     }
   }
