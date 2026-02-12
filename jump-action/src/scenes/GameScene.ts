@@ -9,6 +9,7 @@ import {
   GAME_HEIGHT,
   PLAYER_X,
   PLAYER_SIZE,
+  PLAYER_TEX_HEIGHT,
   GROUND_Y,
   GROUND_HEIGHT,
   GROUND_TILE_WIDTH,
@@ -140,7 +141,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createPlayer(): void {
-    const playerY = GROUND_Y - GROUND_HEIGHT / 2 - PLAYER_SIZE / 2;
+    // Texture: 40×52, origin (0.5,0.5) → center at y, top at y-26
+    // Body: offset(5,2), size(30,38) → body bottom at y - 26 + 2 + 38 = y + 14
+    // Ground surface: groundTop. We want body bottom = groundTop → y = groundTop - 14
+    const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
+    const bodyBottomFromCenter = -PLAYER_TEX_HEIGHT / 2 + 2 + 38; // 14
+    const playerY = groundTop - bodyBottomFromCenter;
     this.player = new Player(this, PLAYER_X, playerY);
   }
 

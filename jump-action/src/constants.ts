@@ -16,6 +16,7 @@ export const FALL_GRAVITY_MULT = 1.5;
 // Player
 export const PLAYER_X = 100;
 export const PLAYER_SIZE = 40;
+export const PLAYER_TEX_HEIGHT = 52; // body(40) + legs(12)
 
 // Ground
 export const GROUND_HEIGHT = 40;

@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import {
   PLAYER_SIZE,
+  PLAYER_TEX_HEIGHT,
   GROUND_TILE_WIDTH,
   GROUND_HEIGHT,
   COIN_SIZE,
@@ -24,55 +25,102 @@ export class BootScene extends Phaser.Scene {
   }
 
   private createPlayerTexture(): void {
-    const size = PLAYER_SIZE;
-    const g = this.add.graphics();
-    const cx = size / 2;
+    const w = PLAYER_SIZE;
+    const h = PLAYER_TEX_HEIGHT;
 
-    // Guitar-pick (rounded triangle) body
-    const topCy = size * 0.28;
-    const topR = size * 0.46;
-    const botY = size - 2;
-    const dist = botY - topCy;
-    const halfAngle = Math.acos(topR / dist);
+    // Generate two run frames with alternating leg positions
+    for (let frame = 0; frame < 2; frame++) {
+      const g = this.add.graphics();
+      const cx = w / 2;
 
-    g.fillStyle(0xc0392b);
-    g.beginPath();
-    g.arc(cx, topCy, topR, Math.PI / 2 - halfAngle, Math.PI / 2 + halfAngle, true);
-    g.lineTo(cx, botY);
-    g.closePath();
-    g.fillPath();
+      // --- Hoodie body (rounded rect with large top corners, small bottom) ---
+      const bodyX = 4;
+      const bodyW = 32;
+      const bodyH = 38;
+      const tlr = 14; // top-left radius
+      const trr = 14; // top-right radius
+      const blr = 4;  // bottom-left radius
+      const brr = 4;  // bottom-right radius
 
-    // Darker outline
-    g.lineStyle(2, 0x922b21);
-    g.beginPath();
-    g.arc(cx, topCy, topR, Math.PI / 2 - halfAngle, Math.PI / 2 + halfAngle, true);
-    g.lineTo(cx, botY);
-    g.closePath();
-    g.strokePath();
+      g.fillStyle(0xc0392b);
+      g.beginPath();
+      g.moveTo(bodyX + tlr, 0);
+      g.lineTo(bodyX + bodyW - trr, 0);
+      g.arc(bodyX + bodyW - trr, trr, trr, -Math.PI / 2, 0, false);
+      g.lineTo(bodyX + bodyW, bodyH - brr);
+      g.arc(bodyX + bodyW - brr, bodyH - brr, brr, 0, Math.PI / 2, false);
+      g.lineTo(bodyX + blr, bodyH);
+      g.arc(bodyX + blr, bodyH - blr, blr, Math.PI / 2, Math.PI, false);
+      g.lineTo(bodyX, tlr);
+      g.arc(bodyX + tlr, tlr, tlr, Math.PI, -Math.PI / 2, false);
+      g.closePath();
+      g.fillPath();
 
-    // White round face
-    const faceCx = cx + size * 0.1;
-    const faceCy = topCy + 1;
-    const faceR = size * 0.3;
-    g.fillStyle(0xffffff);
-    g.fillCircle(faceCx, faceCy, faceR);
+      // Darker outline
+      g.lineStyle(2, 0x922b21);
+      g.beginPath();
+      g.moveTo(bodyX + tlr, 0);
+      g.lineTo(bodyX + bodyW - trr, 0);
+      g.arc(bodyX + bodyW - trr, trr, trr, -Math.PI / 2, 0, false);
+      g.lineTo(bodyX + bodyW, bodyH - brr);
+      g.arc(bodyX + bodyW - brr, bodyH - brr, brr, 0, Math.PI / 2, false);
+      g.lineTo(bodyX + blr, bodyH);
+      g.arc(bodyX + blr, bodyH - blr, blr, Math.PI / 2, Math.PI, false);
+      g.lineTo(bodyX, tlr);
+      g.arc(bodyX + tlr, tlr, tlr, Math.PI, -Math.PI / 2, false);
+      g.closePath();
+      g.strokePath();
 
-    // Eyes (original style)
-    g.fillStyle(0xffffff);
-    g.fillCircle(size * 0.55, size * 0.27, 6);
-    g.fillCircle(size * 0.75, size * 0.27, 5);
+      // --- Hood opening / face area (white oval inside hood) ---
+      const faceCx = cx + 2;
+      const faceCy = 14;
+      const faceRx = 11;
+      const faceRy = 10;
+      g.fillStyle(0xffffff);
+      g.fillEllipse(faceCx, faceCy, faceRx * 2, faceRy * 2);
 
-    g.fillStyle(0x222222);
-    g.fillCircle(size * 0.58, size * 0.27, 3);
-    g.fillCircle(size * 0.77, size * 0.27, 2.5);
+      // --- Eyes ---
+      g.fillStyle(0xffffff);
+      g.fillCircle(cx + 2, 13, 5);
+      g.fillCircle(cx + 10, 13, 4);
 
-    // Blush marks
-    g.fillStyle(0xffaaaa, 0.5);
-    g.fillCircle(faceCx - faceR * 0.55, faceCy + faceR * 0.45, 3);
-    g.fillCircle(faceCx + faceR * 0.6, faceCy + faceR * 0.45, 3);
+      g.fillStyle(0x222222);
+      g.fillCircle(cx + 4, 13, 2.5);
+      g.fillCircle(cx + 11, 13, 2);
 
-    g.generateTexture("player", size, size);
-    g.destroy();
+      // --- Blush marks ---
+      g.fillStyle(0xffaaaa, 0.5);
+      g.fillCircle(faceCx - faceRx * 0.6, faceCy + faceRy * 0.5, 2.5);
+      g.fillCircle(faceCx + faceRx * 0.65, faceCy + faceRy * 0.5, 2.5);
+
+      // --- Legs (alternating per frame) ---
+      // Left leg
+      const leftX = cx - 6;
+      const leftW = 7;
+      const leftY = frame === 0 ? 38 : 40;
+      const leftH = frame === 0 ? 12 : 10;
+      const leftShoeH = 3;
+
+      g.fillStyle(0xc0392b);
+      g.fillRect(leftX, leftY, leftW, leftH - leftShoeH);
+      g.fillStyle(0x922b21);
+      g.fillRect(leftX, leftY + leftH - leftShoeH, leftW, leftShoeH);
+
+      // Right leg
+      const rightX = cx + 1;
+      const rightW = 7;
+      const rightY = frame === 0 ? 40 : 38;
+      const rightH = frame === 0 ? 10 : 12;
+      const rightShoeH = 3;
+
+      g.fillStyle(0xc0392b);
+      g.fillRect(rightX, rightY, rightW, rightH - rightShoeH);
+      g.fillStyle(0x922b21);
+      g.fillRect(rightX, rightY + rightH - rightShoeH, rightW, rightShoeH);
+
+      g.generateTexture(`player_run${frame}`, w, h);
+      g.destroy();
+    }
   }
 
   private createGroundTileTexture(): void {

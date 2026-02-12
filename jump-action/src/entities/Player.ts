@@ -8,6 +8,7 @@ import {
   LOW_JUMP_GRAVITY_MULT,
   FALL_GRAVITY_MULT,
   PLAYER_SIZE,
+  PLAYER_TEX_HEIGHT,
 } from "../constants";
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
@@ -19,16 +20,33 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private jumpHeld = false;
   private justJumped = false;
   private spinning = false;
+  private isRunning = false;
 
   jumpMultiplier = 1;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, "player");
+    super(scene, x, y, "player_run0");
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    // No world bounds — fall death is handled by GameScene
+    // Physics body covers only the hoodie body, not the legs
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setSize(30, 38);
+    body.setOffset(5, 2);
+
+    // Run animation (2-frame leg alternation)
+    if (!scene.anims.exists("run")) {
+      scene.anims.create({
+        key: "run",
+        frames: [
+          { key: "player_run0" },
+          { key: "player_run1" },
+        ],
+        frameRate: 8,
+        repeat: -1,
+      });
+    }
   }
 
   update(time: number, _delta: number): void {
@@ -57,6 +75,32 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.x = PLAYER_SIZE / 2;
       body.setVelocityX(0);
     }
+
+    // Animation state management
+    if (this.spinning) {
+      // During spin tween, stop frame animation
+      if (this.isRunning) {
+        this.stop();
+        this.isRunning = false;
+      }
+    } else if (onGround) {
+      // On the ground → play run animation
+      if (!this.isRunning) {
+        this.play("run");
+        this.isRunning = true;
+      }
+    } else {
+      // In the air → static frame
+      if (this.isRunning) {
+        this.stop();
+        this.setTexture("player_run0");
+        this.isRunning = false;
+      }
+    }
+
+    // Ensure body size stays correct after texture swap
+    body.setSize(30, 38);
+    body.setOffset(5, 2);
 
     this.applyVariableGravity(body);
   }
@@ -89,10 +133,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.jumpMultiplier = 1;
     this.justJumped = false;
     this.spinning = false;
+    this.isRunning = false;
     this.setAngle(0);
     this.clearTint();
     this.setVelocity(0, 0);
-    (this.body as Phaser.Physics.Arcade.Body).setGravityY(0);
+    this.stop();
+    this.setTexture("player_run0");
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setGravityY(0);
+    body.setSize(30, 38);
+    body.setOffset(5, 2);
   }
 
   private executeJump(): void {
