@@ -18,6 +18,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private jumpBufferedAt = 0;
   private jumpHeld = false;
   private justJumped = false;
+  private spinning = false;
 
   jumpMultiplier = 1;
 
@@ -38,6 +39,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.lastGroundedAt = time;
       if (!this.justJumped) {
         this.jumpCount = 0;
+      }
+      if (this.spinning) {
+        this.spinning = false;
+        this.setAngle(0);
       }
     } else {
       this.justJumped = false;
@@ -83,6 +88,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.maxJumps = MAX_JUMPS;
     this.jumpMultiplier = 1;
     this.justJumped = false;
+    this.spinning = false;
+    this.setAngle(0);
     this.clearTint();
     this.setVelocity(0, 0);
     (this.body as Phaser.Physics.Arcade.Body).setGravityY(0);
@@ -93,6 +100,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.jumpCount++;
     this.jumpBufferedAt = 0;
     this.justJumped = true;
+
+    // Spin animation on 2nd jump and above
+    if (this.jumpCount >= 2) {
+      this.spinning = true;
+      this.scene.tweens.add({
+        targets: this,
+        angle: (this.angle || 0) + 360 * 2,
+        duration: 400,
+        ease: "Linear",
+      });
+    }
   }
 
   private applyVariableGravity(body: Phaser.Physics.Arcade.Body): void {
