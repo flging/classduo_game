@@ -27,6 +27,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private spinning = false;
   private isRunning = false;
   private wasInAir = false;
+  private squashTween?: Phaser.Tweens.Tween;
+  private lastLandTime = 0;
   private trail: Phaser.GameObjects.Graphics;
   private prevPositions: { x: number; y: number }[] = [];
 
@@ -65,9 +67,20 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const body = this.body as Phaser.Physics.Arcade.Body;
     const onGround = body.blocked.down;
 
-    // Landing detection → emit event for dust effect
-    if (this.wasInAir && onGround) {
+    // Landing detection → emit event for dust effect + squash
+    // Cooldown prevents re-trigger when squash scale momentarily lifts body off ground
+    if (this.wasInAir && onGround && time - this.lastLandTime > 200) {
+      this.lastLandTime = time;
       this.emit('land', this.x, this.y);
+      this.squashTween?.stop();
+      this.setScale(1.4, 0.6);
+      this.squashTween = this.scene.tweens.add({
+        targets: this,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 300,
+        ease: 'Back.Out',
+      });
     }
     this.wasInAir = !onGround;
 
@@ -176,6 +189,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.wasInAir = false;
     this.trail.clear();
     this.prevPositions.length = 0;
+    this.squashTween?.stop();
+    this.lastLandTime = 0;
+    this.setScale(1, 1);
     this.setAngle(0);
     this.clearTint();
     this.setVelocity(0, 0);
@@ -203,6 +219,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.jumpBufferedAt = 0;
     this.justJumped = true;
     this.emit('jump', this.x, this.y, this.jumpCount);
+
+    // Squash & Stretch: stretch on jump
+    this.squashTween?.stop();
+    this.setScale(0.75, 1.35);
+    this.squashTween = this.scene.tweens.add({
+      targets: this,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 250,
+      ease: 'Back.Out',
+    });
 
     // Spin on 2nd jump and above (continues until landing)
     if (this.jumpCount >= 2) {

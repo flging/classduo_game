@@ -721,6 +721,7 @@ export class GameScene extends Phaser.Scene {
     if (this.gameState === "game_over") return;
     this.gameState = "game_over";
 
+    this.cameras.main.shake(200, 0.01);
     this.quizManager.cleanup();
 
     this.effectDisplayTimer?.remove();

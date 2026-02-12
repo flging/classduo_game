@@ -241,8 +241,20 @@ export class BootScene extends Phaser.Scene {
     const h = GROUND_HEIGHT;
     const g = this.add.graphics();
 
-    g.fillStyle(COLOR_GROUND);
-    g.fillRect(0, 0, w, h);
+    // Manual gradient: lighter brown (top) → darker brown (bottom)
+    // fillGradientStyle is WebGL-only and won't survive generateTexture
+    const topRGB = { r: 0x9b, g: 0x83, b: 0x65 };
+    const botRGB = { r: 0x6a, g: 0x55, b: 0x40 };
+    const gradientStart = 6; // below the olive top strip
+    const gradientRows = h - gradientStart;
+    for (let i = 0; i < gradientRows; i++) {
+      const t = i / (gradientRows - 1);
+      const r = Math.round(topRGB.r + (botRGB.r - topRGB.r) * t);
+      const gr = Math.round(topRGB.g + (botRGB.g - topRGB.g) * t);
+      const b = Math.round(topRGB.b + (botRGB.b - topRGB.b) * t);
+      g.fillStyle((r << 16) | (gr << 8) | b);
+      g.fillRect(0, gradientStart + i, w, 1);
+    }
 
     g.fillStyle(COLOR_GROUND_TOP);
     g.fillRect(0, 0, w, 6);
