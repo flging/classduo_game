@@ -11,6 +11,9 @@ import {
   PLAYER_TEX_HEIGHT,
 } from "../constants";
 
+// 720° / 0.4s = 1800°/s (same speed as old 2-rotation tween)
+const SPIN_SPEED = 1800;
+
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private jumpCount = 0;
   maxJumps = MAX_JUMPS;
@@ -49,7 +52,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  update(time: number, _delta: number): void {
+  update(time: number, delta: number): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
     const onGround = body.blocked.down;
 
@@ -78,19 +81,20 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Animation state management
     if (this.spinning) {
-      // During spin tween, stop frame animation
-      if (this.isRunning) {
+      // Continuous rotation until landing
+      this.angle += SPIN_SPEED * (delta / 1000);
+      if (this.texture.key !== "player_spin") {
         this.stop();
+        this.setTexture("player_spin");
         this.isRunning = false;
       }
     } else if (onGround) {
-      // On the ground → play run animation
       if (!this.isRunning) {
         this.play("run");
         this.isRunning = true;
       }
     } else {
-      // In the air → static frame
+      // In the air (no spin) → static frame
       if (this.isRunning) {
         this.stop();
         this.setTexture("player_run0");
@@ -151,15 +155,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.jumpBufferedAt = 0;
     this.justJumped = true;
 
-    // Spin animation on 2nd jump and above
+    // Spin on 2nd jump and above (continues until landing)
     if (this.jumpCount >= 2) {
       this.spinning = true;
-      this.scene.tweens.add({
-        targets: this,
-        angle: (this.angle || 0) + 360 * 2,
-        duration: 400,
-        ease: "Linear",
-      });
     }
   }
 
