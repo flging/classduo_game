@@ -9,6 +9,8 @@ import {
   FALL_GRAVITY_MULT,
   PLAYER_SIZE,
   PLAYER_TEX_HEIGHT,
+  COLOR_PLAYER,
+  TRAIL_LENGTH,
 } from "../constants";
 
 // 720° / 0.4s = 1800°/s (same speed as old 2-rotation tween)
@@ -24,6 +26,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private justJumped = false;
   private spinning = false;
   private isRunning = false;
+  private wasInAir = false;
+  private trail: Phaser.GameObjects.Graphics;
+  private prevPositions: { x: number; y: number }[] = [];
 
   jumpMultiplier = 1;
 
@@ -37,6 +42,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setSize(30, 38);
     body.setOffset(5, 5);
+
+    // Spin ghost trail (rendered behind player)
+    this.trail = scene.add.graphics();
+    this.trail.setDepth((this.depth ?? 0) - 1);
 
     // Run animation (2-frame leg alternation)
     if (!scene.anims.exists("run")) {
@@ -55,6 +64,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   update(time: number, delta: number): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
     const onGround = body.blocked.down;
+
+    // Landing detection → emit event for dust effect
+    if (this.wasInAir && onGround) {
+      this.emit('land', this.x, this.y);
+    }
+    this.wasInAir = !onGround;
 
     if (onGround) {
       this.lastGroundedAt = time;
@@ -107,6 +122,26 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     body.setOffset(5, 5);
 
     this.applyVariableGravity(body);
+
+    // Spin ghost trail
+    if (this.spinning) {
+      this.prevPositions.push({ x: this.x, y: this.y });
+      if (this.prevPositions.length > TRAIL_LENGTH) {
+        this.prevPositions.shift();
+      }
+      this.trail.clear();
+      for (let i = 0; i < this.prevPositions.length; i++) {
+        const pos = this.prevPositions[i];
+        const t = (i + 1) / this.prevPositions.length;
+        const alpha = 0.35 * t;
+        const radius = (PLAYER_SIZE / 2) * (0.4 + 0.4 * t);
+        this.trail.fillStyle(0xc0392b, alpha);
+        this.trail.fillCircle(pos.x, pos.y, radius);
+      }
+    } else {
+      this.trail.clear();
+      this.prevPositions.length = 0;
+    }
   }
 
   requestJump(time: number): void {
@@ -138,6 +173,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.justJumped = false;
     this.spinning = false;
     this.isRunning = false;
+    this.wasInAir = false;
+    this.trail.clear();
+    this.prevPositions.length = 0;
     this.setAngle(0);
     this.clearTint();
     this.setVelocity(0, 0);
@@ -149,11 +187,22 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     body.setOffset(5, 5);
   }
 
+  clearTrail(): void {
+    this.trail.clear();
+    this.prevPositions.length = 0;
+  }
+
+  destroy(fromScene?: boolean): void {
+    this.trail.destroy();
+    super.destroy(fromScene);
+  }
+
   private executeJump(): void {
     this.setVelocityY(JUMP_VELOCITY * this.jumpMultiplier);
     this.jumpCount++;
     this.jumpBufferedAt = 0;
     this.justJumped = true;
+    this.emit('jump', this.x, this.y, this.jumpCount);
 
     // Spin on 2nd jump and above (continues until landing)
     if (this.jumpCount >= 2) {

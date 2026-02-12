@@ -53,6 +53,10 @@ import {
   HP_DECAY_MULT_MIN,
   HP_DECAY_MULT_MAX,
   EFFECT_DISPLAY_MS,
+  DUST_PARTICLE_COUNT,
+  JUMP_BURST_COUNT,
+  COLOR_GROUND,
+  COLOR_PLAYER,
 } from "../constants";
 
 export class GameScene extends Phaser.Scene {
@@ -146,6 +150,9 @@ export class GameScene extends Phaser.Scene {
     const bodyBottomFromCenter = -PLAYER_TEX_HEIGHT / 2 + 5 + 38; // 15
     const playerY = groundTop - bodyBottomFromCenter;
     this.player = new Player(this, PLAYER_X, playerY);
+
+    this.player.on('land', this.spawnDustEffect, this);
+    this.player.on('jump', this.spawnJumpBurst, this);
   }
 
   private createUI(): void {
@@ -603,6 +610,55 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  // ---- Particle effects ----
+
+  private spawnDustEffect(x: number, _y: number): void {
+    const footY = GROUND_Y - GROUND_HEIGHT / 2;
+
+    for (let i = 0; i < DUST_PARTICLE_COUNT; i++) {
+      const g = this.add.graphics();
+      g.setDepth(1);
+      const size = Phaser.Math.Between(2, 4);
+      g.fillStyle(COLOR_GROUND, 0.7);
+      g.fillCircle(0, 0, size);
+      g.setPosition(x, footY);
+
+      this.tweens.add({
+        targets: g,
+        x: x + Phaser.Math.Between(-30, 30),
+        y: footY + Phaser.Math.Between(-18, -6),
+        alpha: 0,
+        duration: 500,
+        ease: 'Power2',
+        onComplete: () => g.destroy(),
+      });
+    }
+  }
+
+  private spawnJumpBurst(x: number, y: number, jumpCount: number): void {
+    if (jumpCount < 2) return;
+    const footY = y + PLAYER_TEX_HEIGHT / 4;
+
+    for (let i = 0; i < JUMP_BURST_COUNT; i++) {
+      const g = this.add.graphics();
+      g.setDepth(1);
+      const size = Phaser.Math.Between(1, 3);
+      g.fillStyle(COLOR_PLAYER, 0.5);
+      g.fillCircle(0, 0, size);
+      g.setPosition(x, footY);
+
+      this.tweens.add({
+        targets: g,
+        x: x + Phaser.Math.Between(-20, 20),
+        y: footY + Phaser.Math.Between(10, 25),
+        alpha: 0,
+        duration: 400,
+        ease: 'Power2',
+        onComplete: () => g.destroy(),
+      });
+    }
+  }
+
   // ---- Sync scroll speed to all entities ----
 
   private syncScrollSpeed(): void {
@@ -676,6 +732,7 @@ export class GameScene extends Phaser.Scene {
       (obj as Coin).setVelocityX(0);
     });
 
+    this.player.clearTrail();
     this.player.stop();
     this.player.setTexture("player_dead");
     this.player.setAngle(0);

@@ -99,3 +99,8 @@ export const COLOR_SKY = 0xe8f4f8;
 export const COLOR_PLAYER = 0x4a90d9;
 export const COLOR_GROUND = 0x8b7355;
 export const COLOR_GROUND_TOP = 0x6b8e23;
+
+// Particle effects
+export const TRAIL_LENGTH = 8;
+export const DUST_PARTICLE_COUNT = 6;
+export const JUMP_BURST_COUNT = 4;
