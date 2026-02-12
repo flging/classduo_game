@@ -139,6 +139,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.ducking) {
       body.setSize(30, 19);
       body.setOffset(5, 24);
+      // Tilt only when sliding on ground; flat in air
+      this.setAngle(onGround ? -10 : 0);
     } else {
       body.setSize(30, 38);
       body.setOffset(5, 5);
@@ -198,7 +200,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // scaleY 1→0.5 shifts body bottom up by 8.5px
     this.y += 8.5;
     this.setScale(1.3, 0.5);
-    this.setAngle(-10);
   }
 
   endDuck(): void {

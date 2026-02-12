@@ -665,23 +665,23 @@ export class GameScene extends Phaser.Scene {
     const x = this.player.x - 5;
     const y = groundTop;
 
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 5; i++) {
       const g = this.add.graphics();
       g.setDepth(1);
-      const size = Phaser.Math.Between(1, 3);
-      g.fillStyle(COLOR_GROUND, 0.5);
+      const size = Phaser.Math.Between(1, 4);
+      g.fillStyle(COLOR_GROUND, 0.6);
       g.fillCircle(0, 0, size);
       g.setPosition(
-        x + Phaser.Math.Between(-8, 8),
-        y + Phaser.Math.Between(-4, 2)
+        x + Phaser.Math.Between(-12, 12),
+        y + Phaser.Math.Between(-5, 3)
       );
 
       this.tweens.add({
         targets: g,
-        x: g.x - Phaser.Math.Between(20, 40),
-        y: g.y - Phaser.Math.Between(5, 15),
+        x: g.x - Phaser.Math.Between(25, 50),
+        y: g.y - Phaser.Math.Between(5, 20),
         alpha: 0,
-        duration: 350,
+        duration: 400,
         ease: 'Power2',
         onComplete: () => g.destroy(),
       });
