@@ -461,11 +461,13 @@ export class GameScene extends Phaser.Scene {
 
   private applyHpMaxUp(): void {
     this.hpMax += HP_MAX_BOOST;
+    this.drawHpGaugeFrame();
   }
 
   private applyHpMaxDown(): void {
     this.hpMax = Math.max(HP_MAX_MIN, this.hpMax - HP_MAX_BOOST);
     this.hp = Math.min(this.hp, this.hpMax);
+    this.drawHpGaugeFrame();
   }
 
   private applyHpRestore(): void {
@@ -541,8 +543,14 @@ export class GameScene extends Phaser.Scene {
     g.fillCircle(lx - bulgeR * 0.15, topY - bulgeR * 0.2, bulgeR * 0.3);
   }
 
+  private getHpBarWidth(): number {
+    return HP_BAR_WIDTH * (this.hpMax / HP_MAX);
+  }
+
   private drawHpGaugeFrame(): void {
     const g = this.hpGaugeFrame;
+    g.clear();
+
     const iconCx = HP_ICON_RADIUS + 4;
     const iconCy = HP_BAR_Y + HP_BAR_HEIGHT / 2;
     const r = HP_ICON_RADIUS;
@@ -551,10 +559,11 @@ export class GameScene extends Phaser.Scene {
     this.drawHeartIcon(g, iconCx, iconCy, r);
 
     // Bar frame: dark rounded rect background
+    const barW = this.getHpBarWidth();
     g.fillStyle(0x1a1a2e, 1);
     g.fillRoundedRect(
       HP_BAR_X, HP_BAR_Y,
-      HP_BAR_WIDTH, HP_BAR_HEIGHT,
+      barW, HP_BAR_HEIGHT,
       HP_BAR_RADIUS
     );
 
@@ -562,15 +571,16 @@ export class GameScene extends Phaser.Scene {
     g.lineStyle(2, 0x3d3d5c, 1);
     g.strokeRoundedRect(
       HP_BAR_X, HP_BAR_Y,
-      HP_BAR_WIDTH, HP_BAR_HEIGHT,
+      barW, HP_BAR_HEIGHT,
       HP_BAR_RADIUS
     );
   }
 
   private updateHpGauge(): void {
     const ratio = this.hp / this.hpMax;
+    const barW = this.getHpBarWidth();
     const pad = HP_BAR_PADDING;
-    const innerW = HP_BAR_WIDTH - pad * 2;
+    const innerW = barW - pad * 2;
     const innerH = HP_BAR_HEIGHT - pad * 2;
     const innerR = HP_BAR_RADIUS - pad;
     const fillW = Math.max(0, innerW * ratio);

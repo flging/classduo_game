@@ -412,19 +412,27 @@ export class QuizManager {
 
       const container = this.scene.add.container(x, y).setDepth(5);
 
+      const s = QUIZ_ITEM_SIZE;
       const bg = this.scene.add.graphics();
-      bg.fillStyle(0x3498db, 0.4);
-      bg.fillRoundedRect(
-        -QUIZ_ITEM_SIZE / 2,
-        -QUIZ_ITEM_SIZE / 2,
-        QUIZ_ITEM_SIZE,
-        QUIZ_ITEM_SIZE,
-        8
-      );
+      // Red warning triangle
+      bg.fillStyle(0xe74c3c, 0.5);
+      bg.beginPath();
+      bg.moveTo(0, -s * 0.55);
+      bg.lineTo(s * 0.5, s * 0.4);
+      bg.lineTo(-s * 0.5, s * 0.4);
+      bg.closePath();
+      bg.fillPath();
+      bg.lineStyle(2, 0xc0392b, 0.7);
+      bg.beginPath();
+      bg.moveTo(0, -s * 0.55);
+      bg.lineTo(s * 0.5, s * 0.4);
+      bg.lineTo(-s * 0.5, s * 0.4);
+      bg.closePath();
+      bg.strokePath();
       container.add(bg);
 
       const text = this.scene.add
-        .text(0, 0, word, {
+        .text(0, 4, word, {
           fontFamily: "monospace",
           fontSize: "14px",
           color: "#ffffff",
