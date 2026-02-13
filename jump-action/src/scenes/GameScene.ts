@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 import { Player } from "../entities/Player";
 import { GroundSegment } from "../entities/GroundSegment";
 import { Coin } from "../entities/Coin";
@@ -30,6 +30,10 @@ import {
   COIN_ARC_COUNT,
   COIN_GROUND_Y_OFFSET,
   COIN_HIGH_Y,
+  COIN_MID_Y,
+  COIN_DIAGONAL_COUNT,
+  COIN_ZIGZAG_COUNT,
+  COIN_DIAMOND_COUNT,
   QUIZ_INTERVAL_MS,
   FALL_DEATH_Y,
   MAX_JUMPS,
@@ -82,9 +86,13 @@ export class GameScene extends Phaser.Scene {
   private hpDecayStacks = 0;
   private hpDecayMultiplier = 1;
 
+  private lastCoinPattern = "";
+
   private quizManager!: QuizManager;
   private lastSlideDustTime = 0;
   private lastHpFlashTime = 0;
+
+  private startUI: Phaser.GameObjects.Container | null = null;
 
   // Managers
   private screenFX!: ScreenFXManager;
@@ -116,8 +124,102 @@ export class GameScene extends Phaser.Scene {
     this.createQuizManager();
     this.fillInitialGround();
 
-    // Fade in
+    // Fade in, then show START UI
     this.cameras.main.fadeIn(400);
+    this.physics.pause();
+    this.createStartUI();
+  }
+
+  private createStartUI(): void {
+    const cx = GAME_WIDTH / 2;
+    const cy = GAME_HEIGHT / 2;
+
+    // Opaque overlay — hides game background completely
+    const overlay = this.add
+      .rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000, 1)
+      .setOrigin(0.5);
+
+    // START text
+    const startText = this.add
+      .text(0, 0, "START", {
+        fontFamily: "Arial Black, Arial, sans-serif",
+        fontSize: `${Math.round(64 * S)}px`,
+        color: "#ffffff",
+        stroke: "#000000",
+        strokeThickness: 6 * S,
+      })
+      .setOrigin(0.5);
+
+    // Tap hint
+    const hintText = this.add
+      .text(0, 50 * S, "Tap to Start", {
+        fontFamily: "Arial, sans-serif",
+        fontSize: `${Math.round(20 * S)}px`,
+        color: "#cccccc",
+      })
+      .setOrigin(0.5);
+
+    const container = this.add.container(cx, cy, [overlay, startText, hintText]);
+    container.setDepth(1000);
+    container.setSize(GAME_WIDTH, GAME_HEIGHT);
+    container.setInteractive();
+
+    // Pulse animation
+    this.tweens.add({
+      targets: startText,
+      scaleX: 1.05,
+      scaleY: 1.05,
+      duration: 600,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+
+    container.on("pointerdown", () => {
+      this.startGame();
+    });
+
+    this.startUI = container;
+  }
+
+  private startGame(): void {
+    if (this.gameState !== "waiting_start") return;
+
+    if (this.startUI) {
+      this.tweens.add({
+        targets: this.startUI,
+        alpha: 0,
+        duration: 250,
+        ease: "Power2",
+        onComplete: () => {
+          this.startUI?.destroy();
+          this.startUI = null;
+
+          // Begin intro — spin drop from above
+          this.gameState = "intro";
+          this.physics.resume();
+
+          // Keep ground still during intro
+          this.grounds.getChildren().forEach((obj) => {
+            (obj as GroundSegment).setScrollSpeed(0);
+          });
+
+          // Player drops from above with spin
+          this.player.setVisible(true);
+          this.player.setAlpha(1);
+          this.player.startSpin();
+
+          // On landing: impact effect → brief pause → playing
+          this.player.once("land", () => {
+            this.screenFX.shake({ intensity: 0.006, duration: 150 });
+            this.particles.spawnDustEffect(this.player.x);
+            this.time.delayedCall(400, () => {
+              this.gameState = "playing";
+            });
+          });
+        },
+      });
+    }
   }
 
   private resetState(): void {
@@ -127,7 +229,7 @@ export class GameScene extends Phaser.Scene {
     this.speedStacks = 0;
     this.jumpStacks = 0;
     this.jumpCountStacks = 0;
-    this.gameState = "playing";
+    this.gameState = "waiting_start";
     this.nextGroundX = 0;
     this.distanceTraveled = 0;
     this.totalCoinsCollected = 0;
@@ -138,6 +240,7 @@ export class GameScene extends Phaser.Scene {
     this.hpDecayMultiplier = 1;
     this.lastSlideDustTime = 0;
     this.lastHpFlashTime = 0;
+    this.lastCoinPattern = "";
   }
 
   private createGroups(): void {
@@ -163,14 +266,10 @@ export class GameScene extends Phaser.Scene {
     const bodyBottomFromCenter = -PLAYER_TEX_HEIGHT / 2 + (5 + 38) * S;
     const playerY = groundTop - bodyBottomFromCenter;
 
-    // Start offscreen for run-in effect
-    this.player = new Player(this, -50 * S, playerY);
-    this.tweens.add({
-      targets: this.player,
-      x: PLAYER_X,
-      duration: 400,
-      ease: "Power2",
-    });
+    // Hidden above screen until intro drop
+    this.player = new Player(this, PLAYER_X, -80 * S);
+    this.player.setAlpha(0);
+    this.player.setVisible(false);
 
     this.player.on("land", this.onPlayerLand, this);
     this.player.on("jump", this.onPlayerJump, this);
@@ -246,9 +345,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleJumpDown = (): void => {
-    if (this.gameState !== "game_over") {
-      this.player.requestJump(this.time.now);
+    if (this.gameState === "waiting_start") {
+      this.startGame();
+      return;
     }
+    if (this.gameState === "game_over" || this.gameState === "intro") return;
+    this.player.requestJump(this.time.now);
   };
 
   private handleJumpUp = (): void => {
@@ -256,9 +358,12 @@ export class GameScene extends Phaser.Scene {
   };
 
   private handleDuckDown = (): void => {
-    if (this.gameState !== "game_over") {
-      this.player.startDuck();
+    if (this.gameState === "waiting_start") {
+      this.startGame();
+      return;
     }
+    if (this.gameState === "game_over" || this.gameState === "intro") return;
+    this.player.startDuck();
   };
 
   private handleDuckUp = (): void => {
@@ -268,11 +373,12 @@ export class GameScene extends Phaser.Scene {
   // ── Ground spawning ──
 
   private fillInitialGround(): void {
+    this.nextGroundX = 0;
     while (this.nextGroundX < GAME_WIDTH + GROUND_TILE_WIDTH) {
       const tileCount = Phaser.Math.Between(GROUND_SEGMENT_MIN, GROUND_SEGMENT_MAX);
       const width = tileCount * GROUND_TILE_WIDTH;
       this.spawnGroundSegment(this.nextGroundX + width / 2, width);
-      this.spawnGroundCoins(this.nextGroundX, width);
+      // No coins on initial ground — they appear naturally after intro
       this.nextGroundX += width;
     }
   }
@@ -295,15 +401,48 @@ export class GameScene extends Phaser.Scene {
       const width = tileCount * GROUND_TILE_WIDTH;
       this.spawnGroundSegment(this.nextGroundX + width / 2, width);
 
-      const pattern = Math.random();
-      if (pattern < 0.5) {
-        this.spawnGroundCoins(this.nextGroundX, width);
-      } else if (pattern < 0.8) {
-        this.spawnHighCoins(this.nextGroundX, width);
-      } else {
-        this.spawnGroundCoins(this.nextGroundX, width);
-        this.spawnHighCoins(this.nextGroundX + COIN_LINE_SPACING * 2, width / 2);
+      const excludeSlots = new Set<number>();
+      const totalSlots = Math.floor(width / COIN_LINE_SPACING);
+
+      // 60% chance to spawn a bonus aerial formation
+      if (Math.random() < 0.6 && totalSlots > 0) {
+        const bonusPatterns = ["high", "diagonal", "zigzag", "diamond"];
+        const candidates = bonusPatterns.filter((p) => p !== this.lastCoinPattern);
+        const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+        this.lastCoinPattern = chosen;
+
+        switch (chosen) {
+          case "high": {
+            const count = Math.min(5, totalSlots);
+            for (let i = 0; i < count; i++) excludeSlots.add(i);
+            this.spawnHighCoins(this.nextGroundX, width);
+            break;
+          }
+          case "diagonal": {
+            const count = Math.min(COIN_DIAGONAL_COUNT, totalSlots);
+            for (let i = 0; i < count; i++) excludeSlots.add(i);
+            this.spawnDiagonalCoins(this.nextGroundX, width);
+            break;
+          }
+          case "zigzag": {
+            const count = Math.min(COIN_ZIGZAG_COUNT, totalSlots);
+            for (let i = 0; i < count; i++) excludeSlots.add(i);
+            this.spawnZigzagCoins(this.nextGroundX, width);
+            break;
+          }
+          case "diamond": {
+            const centerSlot = Math.floor(totalSlots / 2);
+            for (let s = centerSlot - 1; s <= centerSlot + 1; s++) {
+              if (s >= 0 && s < totalSlots) excludeSlots.add(s);
+            }
+            this.spawnDiamondCoins(this.nextGroundX, width);
+            break;
+          }
+        }
       }
+
+      // Always spawn ground coins, skipping slots occupied by formations
+      this.spawnGroundCoins(this.nextGroundX, width, excludeSlots);
 
       this.nextGroundX += width;
     }
@@ -311,12 +450,13 @@ export class GameScene extends Phaser.Scene {
 
   // ── Coin spawning ──
 
-  private spawnGroundCoins(startX: number, segWidth: number): void {
+  private spawnGroundCoins(startX: number, segWidth: number, excludeSlots?: Set<number>): void {
     const groundTop = GROUND_Y - GROUND_HEIGHT / 2;
     const y = groundTop + COIN_GROUND_Y_OFFSET;
     const count = Math.floor(segWidth / COIN_LINE_SPACING);
     const speed = this.getEffectiveSpeed();
     for (let i = 0; i < count; i++) {
+      if (excludeSlots?.has(i)) continue;
       const x = startX + COIN_LINE_SPACING / 2 + i * COIN_LINE_SPACING;
       const coin = new Coin(this, x, y);
       this.coins.add(coin);
@@ -345,6 +485,64 @@ export class GameScene extends Phaser.Scene {
       const arcHeight = 120 * S;
       const y = groundTop - 30 * S - arcHeight * 4 * t * (1 - t);
       const coin = new Coin(this, x, y);
+      this.coins.add(coin);
+      coin.setScrollSpeed(speed);
+    }
+  }
+
+  private spawnDiagonalCoins(startX: number, segWidth: number): void {
+    const midY = COIN_MID_Y;
+    const highY = COIN_HIGH_Y;
+    const ascending = Math.random() < 0.5;
+    const speed = this.getEffectiveSpeed();
+
+    for (let i = 0; i < COIN_DIAGONAL_COUNT; i++) {
+      const t = i / (COIN_DIAGONAL_COUNT - 1);
+      const x = startX + COIN_LINE_SPACING / 2 + i * COIN_LINE_SPACING;
+      const y = ascending
+        ? midY + (highY - midY) * t
+        : highY + (midY - highY) * t;
+      const coin = new Coin(this, x, y);
+      this.coins.add(coin);
+      coin.setScrollSpeed(speed);
+    }
+  }
+
+  private spawnZigzagCoins(startX: number, segWidth: number): void {
+    const midY = COIN_MID_Y;
+    const highY = COIN_HIGH_Y;
+    const count = Math.min(COIN_ZIGZAG_COUNT, Math.floor(segWidth / COIN_LINE_SPACING));
+    const speed = this.getEffectiveSpeed();
+
+    for (let i = 0; i < count; i++) {
+      const x = startX + COIN_LINE_SPACING / 2 + i * COIN_LINE_SPACING;
+      const y = i % 2 === 0 ? midY : highY;
+      const coin = new Coin(this, x, y);
+      this.coins.add(coin);
+      coin.setScrollSpeed(speed);
+    }
+  }
+
+  private spawnDiamondCoins(startX: number, segWidth: number): void {
+    const highY = COIN_HIGH_Y;
+    const midY = COIN_MID_Y;
+    const totalSlots = Math.floor(segWidth / COIN_LINE_SPACING);
+    const centerSlot = Math.floor(totalSlots / 2);
+    const centerX = startX + COIN_LINE_SPACING / 2 + centerSlot * COIN_LINE_SPACING;
+    const centerY = (highY + midY) / 2;
+    const speed = this.getEffectiveSpeed();
+
+    // Diamond in mid~high range, snapped to coin grid
+    const points = [
+      { x: centerX, y: highY },                        // top
+      { x: centerX - COIN_LINE_SPACING, y: centerY },  // left
+      { x: centerX, y: centerY },                      // center
+      { x: centerX + COIN_LINE_SPACING, y: centerY },  // right
+      { x: centerX, y: midY },                         // bottom
+    ];
+
+    for (const pt of points) {
+      const coin = new Coin(this, pt.x, pt.y);
       this.coins.add(coin);
       coin.setScrollSpeed(speed);
     }
@@ -485,62 +683,76 @@ export class GameScene extends Phaser.Scene {
   // ── Main update ──
 
   update(time: number, delta: number): void {
-    if (this.gameState === "game_over" || this.gameState === "choosing_reward")
+    if (
+      this.gameState === "game_over" ||
+      this.gameState === "choosing_reward" ||
+      this.gameState === "waiting_start"
+    )
       return;
 
-    // Camera / parallax
-    this.cameraManager.update(this.getEffectiveSpeed(), delta, this.distanceTraveled);
+    const isIntro = this.gameState === "intro";
 
-    // HP decay
-    this.hp -= delta * this.hpDecayMultiplier;
-    if (this.hp <= 0) {
-      this.hp = 0;
-      this.ui.updateHpGauge(this.hp, this.hpMax);
-      this.triggerGameOver("hp");
-      return;
+    // Camera / parallax — stationary during intro
+    if (!isIntro) {
+      this.cameraManager.update(this.getEffectiveSpeed(), delta, this.score);
     }
-    this.ui.updateHpGauge(this.hp, this.hpMax);
 
-    // (Low HP warning removed — no red flash)
+    // HP decay, quiz timer — only during active gameplay
+    if (!isIntro) {
+      this.hp -= delta * this.hpDecayMultiplier;
+      if (this.hp <= 0) {
+        this.hp = 0;
+        this.ui.updateHpGauge(this.hp, this.hpMax);
+        this.triggerGameOver("hp");
+        return;
+      }
+      this.ui.updateHpGauge(this.hp, this.hpMax);
 
-    // Quiz timer
-    if (this.gameState === "playing") {
-      this.quizTimer += delta;
-      if (this.quizTimer >= QUIZ_INTERVAL_MS) {
-        this.quizTimer = 0;
-        this.quizManager.startQuiz();
+      if (this.gameState === "playing") {
+        this.quizTimer += delta;
+        if (this.quizTimer >= QUIZ_INTERVAL_MS) {
+          this.quizTimer = 0;
+          this.quizManager.startQuiz();
+        }
       }
     }
 
+    // Player physics — runs during intro for ground collision
+    this.player.scrollSpeed = isIntro ? 0 : this.getEffectiveSpeed();
     this.player.update(time, delta);
 
     // Slide dust
-    const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
-    if (this.player.isDucking && playerBody.blocked.down) {
-      if (time - this.lastSlideDustTime > 50) {
-        this.lastSlideDustTime = time;
-        this.particles.spawnSlideDust(this.player.x + 25 * S);
+    if (!isIntro) {
+      const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
+      if (this.player.isDucking && playerBody.blocked.down) {
+        if (time - this.lastSlideDustTime > 50) {
+          this.lastSlideDustTime = time;
+          this.particles.spawnSlideDust(this.player.x + 25 * S);
+        }
+      }
+
+      // Speed lines when going fast
+      if (this.scrollSpeedMultiplier >= SPEED_LINE_THRESHOLD) {
+        this.particles.spawnSpeedLines();
       }
     }
 
-    // Speed lines when going fast
-    if (this.scrollSpeedMultiplier >= SPEED_LINE_THRESHOLD) {
-      this.particles.spawnSpeedLines();
+    // Ground scroll + spawn — stationary during intro
+    if (!isIntro) {
+      const scrollDelta = Math.abs(this.getEffectiveSpeed()) * (delta / 1000);
+      this.distanceTraveled += scrollDelta;
+      this.nextGroundX += this.getEffectiveSpeed() * (delta / 1000);
+
+      this.spawnNewGround();
+      this.syncScrollSpeed();
     }
-
-    const scrollDelta = Math.abs(this.getEffectiveSpeed()) * (delta / 1000);
-    this.distanceTraveled += scrollDelta;
-    this.nextGroundX += this.getEffectiveSpeed() * (delta / 1000);
-
-    this.spawnNewGround();
-    this.syncScrollSpeed();
 
     // Particle & UI update
     this.particles.update(delta);
     this.ui.update(delta);
 
-    // Fall death
-    if (this.player.y > FALL_DEATH_Y) {
+    // Fall death — not during intro
+    if (!isIntro && this.player.y > FALL_DEATH_Y) {
       this.triggerGameOver("fall");
     }
   }
@@ -592,7 +804,8 @@ export class GameScene extends Phaser.Scene {
           this.cameras.main.zoomTo(1.1, 800);
           this.cameras.main.fadeOut(800, 0, 0, 0, (_cam: Phaser.Cameras.Scene2D.Camera, progress: number) => {
             if (progress === 1) {
-              this.scene.start("GameOverScene", { score: this.score });
+              const stats = this.quizManager.getStats();
+              this.scene.start("GameOverScene", { score: this.score, ...stats });
             }
           });
         },
@@ -602,7 +815,8 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.zoomTo(1.1, 600);
       this.cameras.main.fadeOut(600, 0, 0, 0, (_cam: Phaser.Cameras.Scene2D.Camera, progress: number) => {
         if (progress === 1) {
-          this.scene.start("GameOverScene", { score: this.score });
+          const stats = this.quizManager.getStats();
+          this.scene.start("GameOverScene", { score: this.score, ...stats });
         }
       });
     }

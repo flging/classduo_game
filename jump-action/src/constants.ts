@@ -45,11 +45,15 @@ export const COIN_LINE_SPACING = 40 * S;
 export const COIN_ARC_COUNT = 5;
 export const COIN_GROUND_Y_OFFSET = -30 * S;
 export const COIN_HIGH_Y = 220 * S;
+export const COIN_MID_Y = (COIN_HIGH_Y + (GROUND_Y - GROUND_HEIGHT / 2 + COIN_GROUND_Y_OFFSET)) / 2;
+export const COIN_DIAGONAL_COUNT = 5;
+export const COIN_ZIGZAG_COUNT = 6;
+export const COIN_DIAMOND_COUNT = 5;
 export const COLOR_COIN = 0xf1c40f;
 
 // Quiz
 export const QUIZ_INTERVAL_MS = 8000;
-export const QUIZ_ANNOUNCE_MS = 3000;
+export const QUIZ_ANNOUNCE_MS = 4500;
 export const QUIZ_WINDOW_MS = 5000;
 export const QUIZ_RESULT_MS = 1000;
 export const QUIZ_ITEM_SIZE = 44 * S;
@@ -77,21 +81,21 @@ export const HP_ICON_RADIUS = 14 * S;
 export const HP_BAR_X = 36 * S;
 export const HP_BAR_Y = 8 * S;
 export const HP_BAR_WIDTH = 600 * S;
-export const HP_BAR_HEIGHT = 26 * S;
-export const HP_BAR_RADIUS = 13 * S;
-export const HP_BAR_PADDING = 3 * S;
+export const HP_BAR_HEIGHT = 18 * S;
+export const HP_BAR_RADIUS = 9 * S;
+export const HP_BAR_PADDING = 2.5 * S;
 export const COLOR_HP_HEART = 0xe74c3c;
 export const COLOR_HP_HEART_SHINE = 0xf1948a;
 
 // HP gauge visual
-export const HP_FRAME_BG = 0x1a1a2e;
-export const HP_FRAME_OUTLINE = 0x3d3d5c;
+export const HP_FRAME_BG = 0x2a1215;
+export const HP_FRAME_OUTLINE = 0x922b21;
 export const HP_COLORS = {
   high: { fill: 0x2ecc71, dark: 0x1fa85a, outline: 0x1b8a4a, shine: 0x58d68d },
   mid:  { fill: 0xf39c12, dark: 0xd4850a, outline: 0xb37209, shine: 0xf5b041 },
   low:  { fill: 0xe74c3c, dark: 0xc0392b, outline: 0x922b21, shine: 0xec7063 },
 };
-export const HP_SEGMENT_COLOR = 0x3d3d5c;
+export const HP_SEGMENT_COLOR = 0x922b21;
 export const HP_MAX_BOOST = 5000;
 export const HP_RESTORE_AMOUNT = 8000;
 export const HP_DECAY_STACK_BASE = 1.15;
@@ -172,12 +176,14 @@ export const SKY_TOP_COLOR = { r: 0x5b, g: 0x86, b: 0xc7 };
 export const SKY_MID_COLOR = { r: 0xa8, g: 0xce, b: 0xef };
 export const SKY_BOT_COLOR = { r: 0xf5, g: 0xe6, b: 0xca };
 
-// ── Distance-based sky tinting ──
-export const SKY_TINT_STAGES = [
-  { dist: 0, color: 0xffffff },
-  { dist: 2000 * S, color: 0xfff8e8 },
-  { dist: 5000 * S, color: 0xffe0b0 },
-  { dist: 10000 * S, color: 0xffb070 },
+// ── Day/Night cycle (score-based, loops every 500 points) ──
+export const DAY_NIGHT_CYCLE_SCORE = 500;
+export const DAY_NIGHT_STAGES = [
+  { at: 0.00, sky: { r: 255, g: 255, b: 255, a: 0    }, mountain: 0xffffff },  // Day — clear
+  { at: 0.25, sky: { r: 255, g: 140, b:  50, a: 0.25 }, mountain: 0xffd0a0 },  // Sunset — orange
+  { at: 0.50, sky: { r:  20, g:  24, b:  82, a: 0.55 }, mountain: 0x3a3f6e },  // Night — dark navy
+  { at: 0.75, sky: { r: 120, g:  60, b: 140, a: 0.35 }, mountain: 0x8a6090 },  // Dawn — purple/pink
+  { at: 1.00, sky: { r: 255, g: 255, b: 255, a: 0    }, mountain: 0xffffff },  // Day — loops
 ];
 
 // ── HP gauge animation ──

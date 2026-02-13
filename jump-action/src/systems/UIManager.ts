@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 import {
   S,
   GAME_WIDTH,
@@ -19,10 +19,6 @@ import {
   EFFECT_DISPLAY_MS,
   SCORE_BOUNCE_SCALE,
   SCORE_BOUNCE_DURATION,
-  HP_FRAME_BG,
-  HP_FRAME_OUTLINE,
-  HP_COLORS,
-  HP_SEGMENT_COLOR,
 } from "../constants";
 
 export class UIManager {
@@ -30,6 +26,7 @@ export class UIManager {
 
   // Score
   private scoreText!: Phaser.GameObjects.Text;
+  private coinLabel!: Phaser.GameObjects.Text;
   private displayedScore = 0;
   private targetScore = 0;
 
@@ -43,11 +40,17 @@ export class UIManager {
   private displayedHpRatio = 1;
   private lastHpRatio = 1;
   private hpDamageFlashTimer = 0;
+  private hpShinePhase = 0;
+  private hpShineMaskGfx!: Phaser.GameObjects.Graphics;
+  private hpShineGfx!: Phaser.GameObjects.Graphics;
 
   // Heartbeat
   private heartbeatTween?: Phaser.Tweens.Tween;
   private heartIcon!: Phaser.GameObjects.Graphics;
   private isHeartbeating = false;
+
+  // HP bar wave effect
+  private hpWavePhase = 0;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -65,7 +68,7 @@ export class UIManager {
       .setOrigin(1, 0)
       .setDepth(DEPTH_HUD);
 
-    this.scene.add
+    this.coinLabel = this.scene.add
       .text(GAME_WIDTH - 80 * S, 22 * S, "COIN", {
         fontFamily: "monospace",
         fontSize: `${14 * S}px`,
@@ -79,6 +82,10 @@ export class UIManager {
     this.hpGaugeFrame = this.scene.add.graphics().setDepth(DEPTH_HUD);
     this.hpGaugeFill = this.scene.add.graphics().setDepth(DEPTH_HUD + 0.1);
     this.heartIcon = this.scene.add.graphics().setDepth(DEPTH_HUD + 0.2);
+    this.hpShineMaskGfx = this.scene.add.graphics();
+    this.hpShineMaskGfx.setVisible(false);
+    this.hpShineGfx = this.scene.add.graphics().setDepth(DEPTH_HUD + 0.15);
+    this.hpShineGfx.setMask(this.hpShineMaskGfx.createGeometryMask());
     this.drawHpGaugeFrame();
 
     // Effect text
@@ -160,36 +167,57 @@ export class UIManager {
     this.drawHpFill(ratio);
   }
 
+  /** Trace parametric heart path: x=16sin³t, y=13cos−5cos2t−2cos3t−cos4t */
+  private traceHeartPath(
+    g: Phaser.GameObjects.Graphics,
+    cx: number,
+    cy: number,
+    r: number,
+  ): void {
+    const sc = r / 15;
+    const yOff = -2.5;
+    const N = 32;
+    for (let i = 0; i <= N; i++) {
+      const t = (i / N) * Math.PI * 2;
+      const st = Math.sin(t);
+      const hx = 16 * st * st * st;
+      const hy = -(
+        13 * Math.cos(t) -
+        5 * Math.cos(2 * t) -
+        2 * Math.cos(3 * t) -
+        Math.cos(4 * t)
+      );
+      const px = cx + hx * sc;
+      const py = cy + (hy + yOff) * sc;
+      if (i === 0) g.moveTo(px, py);
+      else g.lineTo(px, py);
+    }
+  }
+
   private drawHeartIcon(
     g: Phaser.GameObjects.Graphics,
     cx: number,
     cy: number,
-    r: number
+    r: number,
   ): void {
-    const topY = cy - r * 0.4;
-    const botY = cy + r;
-    const lx = cx - r * 0.55;
-    const rx = cx + r * 0.55;
-    const bulgeR = r * 0.55;
-
+    // Fill
     g.fillStyle(COLOR_HP_HEART, 1);
     g.beginPath();
-    g.arc(lx, topY, bulgeR, Math.PI, 0, false);
-    g.arc(rx, topY, bulgeR, Math.PI, 0, false);
-    g.lineTo(cx, botY);
+    this.traceHeartPath(g, cx, cy, r);
     g.closePath();
     g.fillPath();
 
+    // Outline
     g.lineStyle(2 * S, 0x922b21, 1);
     g.beginPath();
-    g.arc(lx, topY, bulgeR, Math.PI, 0, false);
-    g.arc(rx, topY, bulgeR, Math.PI, 0, false);
-    g.lineTo(cx, botY);
+    this.traceHeartPath(g, cx, cy, r);
     g.closePath();
     g.strokePath();
 
+    // Shine highlight on left bump
+    const sc = r / 15;
     g.fillStyle(COLOR_HP_HEART_SHINE, 0.6);
-    g.fillCircle(lx - bulgeR * 0.15, topY - bulgeR * 0.2, bulgeR * 0.3);
+    g.fillCircle(cx - 8 * sc, cy - 10 * sc, r * 0.18);
   }
 
   private drawHpGaugeFrame(): void {
@@ -203,16 +231,16 @@ export class UIManager {
     const br = HP_BAR_RADIUS;
     const pad = HP_BAR_PADDING;
 
-    // Background fill
-    g.fillStyle(HP_FRAME_BG, 1);
+    // Background fill — translucent dark
+    g.fillStyle(0x000000, 0.3);
     g.fillRoundedRect(bx, by, barW, bh, br);
 
-    // Outline stroke
-    g.lineStyle(2 * S, HP_FRAME_OUTLINE, 1);
+    // Subtle white border
+    g.lineStyle(1 * S, 0xffffff, 0.2);
     g.strokeRoundedRect(bx, by, barW, bh, br);
 
     // Segment lines at 25%, 50%, 75%
-    g.lineStyle(1 * S, HP_SEGMENT_COLOR, 0.4);
+    g.lineStyle(1 * S, 0xffffff, 0.15);
     const innerW = barW - pad * 2;
     for (const frac of [0.25, 0.5, 0.75]) {
       const lx = bx + pad + innerW * frac;
@@ -227,10 +255,77 @@ export class UIManager {
     this.heartIcon.setPosition(iconCx, iconCy);
   }
 
-  private getHpColors(displayRatio: number) {
-    if (displayRatio > 0.5) return HP_COLORS.high;
-    if (displayRatio > 0.25) return HP_COLORS.mid;
-    return HP_COLORS.low;
+  private getHpFillColor(displayRatio: number): number {
+    const r = Phaser.Math.Clamp(displayRatio, 0, 1);
+    // teal(0x00BFA5) → amber(0xFFA726) → red(0xEF5350)
+    if (r > 0.5) {
+      const t = (r - 0.5) / 0.5; // 1=teal, 0=amber
+      return this.lerpColor(0xffa726, 0x00bfa5, t);
+    }
+    const t = r / 0.5; // 1=amber, 0=red
+    return this.lerpColor(0xef5350, 0xffa726, t);
+  }
+
+  private lerpColor(a: number, b: number, t: number): number {
+    const ar = (a >> 16) & 0xff, ag = (a >> 8) & 0xff, ab = a & 0xff;
+    const br = (b >> 16) & 0xff, bg = (b >> 8) & 0xff, bb = b & 0xff;
+    const rr = Math.round(ar + (br - ar) * t);
+    const gg = Math.round(ag + (bg - ag) * t);
+    const bl = Math.round(ab + (bb - ab) * t);
+    return (rr << 16) | (gg << 8) | bl;
+  }
+
+  /** Draw HP fill shape with wavy right edge when not full */
+  private drawHpFillShape(
+    g: Phaser.GameObjects.Graphics,
+    fx: number,
+    fy: number,
+    fillW: number,
+    innerH: number,
+    innerR: number,
+    color: number,
+    alpha: number,
+    wavy: boolean,
+  ): void {
+    const r = Math.min(innerR, fillW / 2);
+
+    g.fillStyle(color, alpha);
+    g.beginPath();
+
+    // Top-left rounded corner
+    g.arc(fx + r, fy + r, r, Math.PI, Math.PI * 1.5, false);
+
+    // Top edge to right
+    g.lineTo(fx + fillW, fy);
+
+    if (wavy) {
+      // Wavy right edge — gentle sway, not visible ripple
+      const segments = 12;
+      const amp = 1 * S;
+      const freq = 0.7;
+      for (let i = 1; i <= segments; i++) {
+        const t = i / segments;
+        const py = fy + t * innerH;
+        const wave =
+          Math.sin(t * Math.PI * 2 * freq + this.hpWavePhase) * amp;
+        g.lineTo(fx + fillW + wave, py);
+      }
+    } else {
+      // Straight right edge with rounded corners (full bar)
+      g.lineTo(fx + fillW, fy);
+      g.arc(fx + fillW - r, fy + r, r, Math.PI * 1.5, 0, false);
+      g.lineTo(fx + fillW, fy + innerH - r);
+      g.arc(fx + fillW - r, fy + innerH - r, r, 0, Math.PI * 0.5, false);
+    }
+
+    // Bottom edge going left
+    g.lineTo(fx + r, fy + innerH);
+
+    // Bottom-left rounded corner
+    g.arc(fx + r, fy + innerH - r, r, Math.PI * 0.5, Math.PI, false);
+
+    g.closePath();
+    g.fillPath();
   }
 
   private drawHpFill(ratio: number): void {
@@ -246,39 +341,65 @@ export class UIManager {
 
     const g = this.hpGaugeFill;
     g.clear();
-    if (fillW <= 0) return;
-
-    const fx = HP_BAR_X + pad;
-    const fy = HP_BAR_Y + pad;
-    const trR = fillW >= innerW - innerR ? innerR : 0;
-    const brR = fillW >= innerW - innerR ? innerR : 0;
-    const corners = { tl: innerR, tr: trR, bl: innerR, br: brR };
-    const cornersTop = { tl: innerR, tr: trR, bl: 0, br: 0 };
-
-    if (this.hpDamageFlashTimer > 0) {
-      // Damage flash (white)
-      g.fillStyle(0xffffff, 1);
-      g.fillRoundedRect(fx, fy, fillW, innerH, corners);
+    if (fillW <= 0) {
+      this.hpShineGfx.clear();
       return;
     }
 
-    const colors = this.getHpColors(displayRatio);
+    const fx = HP_BAR_X + pad;
+    const fy = HP_BAR_Y + pad;
+    const wavy = displayRatio < 1;
 
-    // Dark base
-    g.fillStyle(colors.dark, 1);
-    g.fillRoundedRect(fx, fy, fillW, innerH, corners);
+    if (this.hpDamageFlashTimer > 0) {
+      // Damage flash (white)
+      this.drawHpFillShape(g, fx, fy, fillW, innerH, innerR, 0xffffff, 1, wavy);
+      this.hpShineGfx.clear();
+      return;
+    }
 
-    // Main fill top half
-    g.fillStyle(colors.fill, 1);
-    g.fillRoundedRect(fx, fy, fillW, innerH * 0.6, cornersTop);
+    const fillColor = this.getHpFillColor(displayRatio);
 
-    // Shine highlight
-    g.fillStyle(colors.shine, 0.5);
-    g.fillRoundedRect(fx + 2 * S, fy + 1 * S, Math.max(0, fillW - 4 * S), innerH * 0.3, cornersTop);
+    // Fill with wavy right edge
+    this.drawHpFillShape(g, fx, fy, fillW, innerH, innerR, fillColor, 0.7, wavy);
 
-    // Outline around fill
-    g.lineStyle(2 * S, colors.outline, 1);
-    g.strokeRoundedRect(fx, fy, fillW, innerH, corners);
+    // Update geometry mask to match current fill shape (same wavy path)
+    this.hpShineMaskGfx.clear();
+    this.drawHpFillShape(this.hpShineMaskGfx, fx, fy, fillW, innerH, innerR, 0xffffff, 1, wavy);
+
+    // Diagonal shine sweep (active first 40% of cycle, paused 60%)
+    this.hpShineGfx.clear();
+    const sweepT = this.hpShinePhase < 0.4 ? this.hpShinePhase / 0.4 : -1;
+    if (sweepT >= 0) {
+      const eased =
+        sweepT < 0.5
+          ? 2 * sweepT * sweepT
+          : 1 - Math.pow(-2 * sweepT + 2, 2) / 2;
+
+      const shineW = innerW * 0.3;
+      const skew = innerH * 0.5;
+      const startX = fx - shineW - skew;
+      const endX = fx + fillW;
+      const shineX = startX + (endX - startX) * eased;
+      const strips = 10;
+      const bandW = shineW + skew;
+      const stripW = bandW / strips;
+
+      for (let i = 0; i < strips; i++) {
+        const t = i / (strips - 1);
+        const d = (t - 0.5) * 2.8;
+        const alpha = 0.3 * Math.exp(-(d * d));
+        const x = shineX + stripW * i;
+
+        this.hpShineGfx.fillStyle(0xffffff, alpha);
+        this.hpShineGfx.beginPath();
+        this.hpShineGfx.moveTo(x + skew, fy);
+        this.hpShineGfx.lineTo(x + stripW + skew + 0.5, fy);
+        this.hpShineGfx.lineTo(x + stripW + 0.5, fy + innerH);
+        this.hpShineGfx.lineTo(x, fy + innerH);
+        this.hpShineGfx.closePath();
+        this.hpShineGfx.fillPath();
+      }
+    }
   }
 
   // ── Update ──
@@ -296,14 +417,24 @@ export class UIManager {
       this.scoreText.setText(String(this.displayedScore));
     }
 
+    // Keep COIN label to the left of score number
+    this.coinLabel.setX(this.scoreText.x - this.scoreText.displayWidth - 14 * S);
+
     // Damage flash timer
     if (this.hpDamageFlashTimer > 0) {
       this.hpDamageFlashTimer -= delta;
     }
+
+    // Shine sweep phase (5-second cycle)
+    this.hpShinePhase = (this.hpShinePhase + delta / 5000) % 1;
+
+    // Wave phase animation (continuous cycle)
+    this.hpWavePhase += delta / 300;
   }
 
   cleanup(): void {
     this.effectDisplayTimer?.remove();
     this.heartbeatTween?.stop();
+    this.hpShineGfx?.clearMask(true);
   }
 }

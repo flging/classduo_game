@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 import {
   S,
   GRAVITY,
@@ -27,6 +27,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private justJumped = false;
   private spinning = false;
   private ducking = false;
+  private duckRequested = false;
   private isRunning = false;
   private wasInAir = false;
   private squashTween?: Phaser.Tweens.Tween;
@@ -35,6 +36,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private prevPositions: { x: number; y: number }[] = [];
 
   jumpMultiplier = 1;
+  scrollSpeed = 0;
+  clampLeft = true;
+
+  startSpin(): void {
+    this.spinning = true;
+  }
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, "player_run0");
@@ -109,8 +116,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.executeJump();
     }
 
-    // Clamp left side only
-    if (this.x < PLAYER_SIZE / 2) {
+    // Buffered duck: pressed slide in air → execute on landing
+    if (onGround && this.duckRequested) {
+      this.duckRequested = false;
+      this.startDuck();
+    }
+
+    // Clamp left side only (disabled during intro run-in)
+    if (this.clampLeft && this.x < PLAYER_SIZE / 2) {
       this.x = PLAYER_SIZE / 2;
       body.setVelocityX(0);
     }
@@ -149,7 +162,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // Ensure body size stays correct after texture swap
     if (this.ducking) {
       body.setSize(30 * S, 19 * S);
-      body.setOffset(5 * S, 24 * S);
+      body.setOffset(5 * S, 22 * S);
       // Tilt only when sliding on ground; flat in air
       this.setAngle(onGround ? -10 : 0);
     } else {
@@ -161,6 +174,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Spin ghost trail
     if (this.spinning) {
+      // Shift existing trail positions by scroll speed (world moves left)
+      const dt = delta / 1000;
+      for (const pos of this.prevPositions) {
+        pos.x += this.scrollSpeed * dt;
+      }
       this.prevPositions.push({ x: this.x, y: this.y });
       if (this.prevPositions.length > TRAIL_LENGTH) {
         this.prevPositions.shift();
@@ -205,17 +223,26 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   startDuck(): void {
     if (this.ducking) return;
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    if (!body.blocked.down) {
+      this.duckRequested = true;
+      return;
+    }
     this.ducking = true;
     this.squashTween?.stop();
-    // Compensate y so body bottom stays at same world position
+    body.setSize(30 * S, 19 * S);
+    body.setOffset(5 * S, 22 * S);
     this.y += 8.5 * S;
     this.setScale(1.3, 0.5);
   }
 
   endDuck(): void {
+    this.duckRequested = false;
     if (!this.ducking) return;
     this.ducking = false;
-    // Compensate y so body bottom stays at same world position
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setSize(30 * S, 38 * S);
+    body.setOffset(5 * S, 5 * S);
     this.y -= 8.5 * S;
     this.setScale(1, 1);
     this.setAngle(0);
@@ -228,9 +255,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.jumpHeld = false;
     this.maxJumps = MAX_JUMPS;
     this.jumpMultiplier = 1;
+    this.scrollSpeed = 0;
     this.justJumped = false;
     this.spinning = false;
     this.ducking = false;
+    this.duckRequested = false;
     this.isRunning = false;
     this.wasInAir = false;
     this.trail.clear();

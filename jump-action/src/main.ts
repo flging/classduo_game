@@ -1,4 +1,4 @@
-import Phaser from "phaser";
-import { config } from "./config";
+import * as Phaser from "phaser";
+import { createGameConfig } from "./config";
 
-new Phaser.Game(config);
+new Phaser.Game(createGameConfig(document.body));
