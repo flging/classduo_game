@@ -520,13 +520,13 @@ export class BootScene extends Phaser.Scene {
     const w = GAME_WIDTH;
     const h = 160 * S;
 
-    // Far mountains
+    // Far mountains (start & end at same height for seamless tiling)
     {
       const g = this.add.graphics();
       g.fillStyle(COLOR_MOUNTAIN_FAR);
       g.beginPath();
       g.moveTo(0, h);
-      g.lineTo(0, 90 * S);
+      g.lineTo(0, 55 * S);
       g.lineTo(60 * S, 40 * S);
       g.lineTo(120 * S, 70 * S);
       g.lineTo(180 * S, 20 * S);
@@ -539,7 +539,7 @@ export class BootScene extends Phaser.Scene {
       g.lineTo(650 * S, 65 * S);
       g.lineTo(720 * S, 25 * S);
       g.lineTo(770 * S, 55 * S);
-      g.lineTo(800 * S, 45 * S);
+      g.lineTo(w, 55 * S);
       g.lineTo(w, h);
       g.closePath();
       g.fillPath();
@@ -547,13 +547,13 @@ export class BootScene extends Phaser.Scene {
       g.destroy();
     }
 
-    // Mid mountains
+    // Mid mountains (start & end at same height for seamless tiling)
     {
       const g = this.add.graphics();
       g.fillStyle(COLOR_MOUNTAIN_MID);
       g.beginPath();
       g.moveTo(0, h);
-      g.lineTo(0, 80 * S);
+      g.lineTo(0, 50 * S);
       g.lineTo(80 * S, 35 * S);
       g.lineTo(150 * S, 65 * S);
       g.lineTo(220 * S, 25 * S);
@@ -564,7 +564,7 @@ export class BootScene extends Phaser.Scene {
       g.lineTo(600 * S, 60 * S);
       g.lineTo(680 * S, 28 * S);
       g.lineTo(750 * S, 50 * S);
-      g.lineTo(800 * S, 40 * S);
+      g.lineTo(w, 50 * S);
       g.lineTo(w, h);
       g.closePath();
       g.fillPath();
@@ -572,13 +572,13 @@ export class BootScene extends Phaser.Scene {
       g.destroy();
     }
 
-    // Near mountains
+    // Near mountains (start & end at same height for seamless tiling)
     {
       const g = this.add.graphics();
       g.fillStyle(COLOR_MOUNTAIN_NEAR);
       g.beginPath();
       g.moveTo(0, h);
-      g.lineTo(0, 70 * S);
+      g.lineTo(0, 45 * S);
       g.lineTo(100 * S, 30 * S);
       g.lineTo(200 * S, 60 * S);
       g.lineTo(280 * S, 15 * S);
@@ -588,7 +588,7 @@ export class BootScene extends Phaser.Scene {
       g.lineTo(620 * S, 20 * S);
       g.lineTo(700 * S, 45 * S);
       g.lineTo(780 * S, 30 * S);
-      g.lineTo(800 * S, 50 * S);
+      g.lineTo(w, 45 * S);
       g.lineTo(w, h);
       g.closePath();
       g.fillPath();
