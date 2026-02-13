@@ -186,6 +186,16 @@ export class GameScene extends Phaser.Scene {
   private startGame(): void {
     if (this.gameState !== "waiting_start") return;
 
+    // Request fullscreen on mobile (must be inside a user-gesture handler)
+    const el = document.documentElement as HTMLElement & {
+      webkitRequestFullscreen?: () => Promise<void>;
+    };
+    if (el.requestFullscreen) {
+      el.requestFullscreen().catch(() => {});
+    } else if (el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen().catch(() => {});
+    }
+
     if (this.startUI) {
       this.tweens.add({
         targets: this.startUI,
