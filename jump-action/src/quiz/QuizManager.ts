@@ -18,6 +18,7 @@ import {
   SCORE_BONUS,
   HP_RESTORE_AMOUNT,
   COLOR_QUIZ_WORD,
+  FONT_FAMILY,
 } from "../constants";
 
 export type GameState =
@@ -131,6 +132,10 @@ export class QuizManager {
   private correctCount = 0;
   private wrongCount = 0;
   private skippedCount = 0;
+
+  private pendingRewardTypes: ChoiceType[] = [];
+  private pendingRewardCorrect = false;
+  private rewardKeyHandler: ((e: KeyboardEvent) => void) | null = null;
   private get t() { return T[this.locale]; }
   private get rewardCards() { return this.locale === "en" ? REWARD_CARDS_EN : REWARD_CARDS_KO; }
 
@@ -362,7 +367,7 @@ export class QuizManager {
     // Title
     const title = this.scene.add
       .text(GAME_WIDTH / 2, cardY - 30 * S, this.t.chooseReward, {
-        fontFamily: "monospace",
+        fontFamily: FONT_FAMILY,
         fontSize: `${20 * S}px`,
         color: "#ffffff",
         fontStyle: "bold",
@@ -460,7 +465,7 @@ export class QuizManager {
       // Title
       const cardTitle = this.scene.add
         .text(0, -25 * S, card.title, {
-          fontFamily: "monospace",
+          fontFamily: FONT_FAMILY,
           fontSize: `${18 * S}px`,
           color: "#ffffff",
           fontStyle: "bold",
@@ -471,7 +476,7 @@ export class QuizManager {
       // Description
       const cardDesc = this.scene.add
         .text(0, 20 * S, card.desc, {
-          fontFamily: "monospace",
+          fontFamily: FONT_FAMILY,
           fontSize: `${12 * S}px`,
           color: "#cccccc",
         })
@@ -537,6 +542,22 @@ export class QuizManager {
 
       this.rewardUI.push(container);
     });
+
+    // Keyboard shortcut: Left/Down/Right arrows to pick cards
+    this.pendingRewardTypes = selected.map((c) => c.type);
+    this.pendingRewardCorrect = isCorrect;
+    this.rewardKeyHandler = (e: KeyboardEvent) => {
+      const keyMap: Record<string, number> = {
+        ArrowLeft: 0,
+        ArrowDown: 1,
+        ArrowRight: 2,
+      };
+      const idx = keyMap[e.key];
+      if (idx !== undefined && this.pendingRewardTypes[idx]) {
+        this.selectReward(this.pendingRewardTypes[idx], this.pendingRewardCorrect);
+      }
+    };
+    this.scene.game.canvas.ownerDocument.addEventListener("keydown", this.rewardKeyHandler);
   }
 
   private selectReward(type: ChoiceType, isCorrect: boolean): void {
@@ -628,7 +649,7 @@ export class QuizManager {
     let fontSize = baseFontSize;
     const text = this.scene.add
       .text(0, 0, label, {
-        fontFamily: "monospace",
+        fontFamily: FONT_FAMILY,
         fontSize: `${fontSize}px`,
         color: "#ffffff",
         fontStyle: "bold",
@@ -714,7 +735,7 @@ export class QuizManager {
 
     const text = this.scene.add
       .text(0, 0, label, {
-        fontFamily: "monospace",
+        fontFamily: FONT_FAMILY,
         fontSize: `${26 * S}px`,
         color: "#ffffff",
         fontStyle: "bold",
@@ -841,7 +862,7 @@ export class QuizManager {
       // Word text
       const text = this.scene.add
         .text(0, 0, word, {
-          fontFamily: "monospace",
+          fontFamily: FONT_FAMILY,
           fontSize: `${14 * S}px`,
           color: "#ffffff",
           fontStyle: "bold",
@@ -887,6 +908,11 @@ export class QuizManager {
   // ---- Cleanup helpers ----
 
   private clearRewardUI(): void {
+    if (this.rewardKeyHandler) {
+      this.scene.game.canvas.ownerDocument.removeEventListener("keydown", this.rewardKeyHandler);
+      this.rewardKeyHandler = null;
+    }
+    this.pendingRewardTypes = [];
     this.rewardTimers.forEach((t) => t.remove());
     this.rewardTimers = [];
     this.rewardUI.forEach((obj) => obj.destroy());
