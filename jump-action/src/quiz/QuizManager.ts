@@ -164,9 +164,7 @@ export class QuizManager {
     this.callbacks.setGameState("quiz_announce");
     this.callbacks.onQuizAnnounce?.();
 
-    const bannerLabel = this.keywords.length >= 3
-      ? question.text
-      : this.t.eat(question.correctAnswer);
+    const bannerLabel = question.text;
     this.bannerContainer = this.createBanner(bannerLabel);
 
     const allWords = Phaser.Utils.Array.Shuffle([
